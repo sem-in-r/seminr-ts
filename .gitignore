@@ -9,7 +9,7 @@ CLAUDE.local.md
 .swcopy
 .swsymlink
 
-# Node
+# Dependencies (installed by bun) and build output
 node_modules/
 dist/
 coverage/

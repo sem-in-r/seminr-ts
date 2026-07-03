@@ -1,0 +1,36 @@
+{
+  "name": "semints",
+  "version": "0.1.0",
+  "description": "PLS-SEM (Partial Least Squares Structural Equation Modeling) estimation in TypeScript, ported from the seminr R package",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit && tsc -p demos"
+  },
+  "keywords": [
+    "pls-sem",
+    "sem",
+    "partial-least-squares",
+    "structural-equation-modeling",
+    "statistics",
+    "seminr"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^6.0.3"
+  }
+}
