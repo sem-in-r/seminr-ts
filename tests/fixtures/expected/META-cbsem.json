@@ -1,0 +1,16 @@
+{
+  "generatedAt": "2026-07-04T03:52:54+0800",
+  "seminrVersion": "2.5.0.9000",
+  "seminrCommit": "b9410fe9155c373fd19891c4a880fc638cba7ab3",
+  "lavaanVersion": "0.6.21",
+  "rVersion": "R version 4.5.3 (2026-03-11)",
+  "optimizer": {
+    "method": "BFGS",
+    "control": {
+      "reltol": 1e-15,
+      "maxit": 100000
+    },
+    "note": "BFGS reltol 1e-15 polish; lavaan default nlminb stops ~2e-4 off along flat ridges"
+  },
+  "tolerance": 1e-05
+}

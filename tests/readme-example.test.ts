@@ -60,3 +60,50 @@ describe("README usage example", () => {
     expect(namedBoot.pathsDescriptives).toEqual(boot.pathsDescriptives);
   });
 });
+
+// Keep in sync with the README "Covariance-based SEM (CBSEM / CFA)" section.
+import {
+  reflective,
+  singleItem,
+  associations,
+  itemErrors,
+  estimateCfa,
+  estimateCbsem,
+  summarizeCbsem,
+} from "../src/index.ts";
+
+describe("README CBSEM example", () => {
+  it("estimates the CFA and CBSEM shown in the README", async () => {
+    const mobi = await loadMobi();
+
+    const mm = constructs(
+      reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
+      reflective("Expectation", multiItems("CUEX", [1, 2, 3])),
+      reflective("Satisfaction", multiItems("CUSA", [1, 2, 3])),
+      reflective("Complaints", singleItem("CUSCO")),
+    );
+    const am = associations(itemErrors("IMAG1", "CUEX2"));
+
+    const cfa = estimateCfa({ data: mobi, measurementModel: mm, itemAssociations: am });
+    expect(cfa.factorLoadings.rows.length).toBeGreaterThan(0);
+    expect(cfa.constructScores.columns).toEqual(["Image", "Expectation", "Satisfaction", "Complaints"]);
+    expect(cfa.lavaanModel).toContain("Image =~ IMAG1 + IMAG2 + IMAG3 + IMAG4 + IMAG5");
+
+    const sm = relationships(
+      paths({ from: ["Image", "Expectation"], to: "Satisfaction" }),
+      paths({ from: "Satisfaction", to: "Complaints" }),
+    );
+    const cbsem = estimateCbsem({
+      data: mobi,
+      measurementModel: mm,
+      structuralModel: sm,
+      itemAssociations: am,
+    });
+    expect(nmGet(cbsem.pathCoef, "Image", "Satisfaction")).toBeGreaterThan(0.3);
+
+    const summary = summarizeCbsem(cbsem);
+    expect(summary.fit["cfi"]!).toBeGreaterThan(0.8);
+    expect(summary.reliability.cols).toEqual(["rhoC", "AVE"]);
+    expect(summary.paths.some((row) => row.op === "~" && row.pvalue !== null)).toBe(true);
+  });
+});

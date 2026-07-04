@@ -1,11 +1,16 @@
 # semints
 
-PLS-SEM (Partial Least Squares Structural Equation Modeling) estimation in TypeScript.
+SEM (Structural Equation Modeling) estimation in TypeScript: PLS-SEM and
+covariance-based SEM (CBSEM/CFA).
 
 `semints` is a port of the modeling and estimation core of the
 [seminr](https://github.com/sem-in-r/seminr) R package: model specification DSL,
 the simplePLS estimation algorithm, PLSc consistency correction, bootstrapping,
-interaction terms, and higher-order constructs.
+interaction terms, higher-order constructs, and covariance-based estimation
+(CFA and full CBSEM). Where seminr delegates covariance-based estimation to
+[lavaan](https://lavaan.ugent.be), semints implements the maximum-likelihood
+estimator itself (LISREL matrices, analytic gradient, BFGS) and matches
+lavaan's output.
 
 Numerical parity with seminr (on its bundled `mobi` / ECSI dataset) is the
 acceptance bar for every feature; golden fixtures are generated from the R
@@ -13,10 +18,18 @@ implementation.
 
 ## Status
 
-Early development — not yet published. The estimation core (composite and
+Early development — not yet published. The PLS estimation core (composite and
 reflective/PLSc models, path weighting/factorial schemes, interactions,
 two-stage higher-order constructs, bootstrapping) matches seminr at 1e-5 on
-the mobi test suite.
+the mobi test suite. The covariance-based core (`estimateCfa`, `estimateCbsem`
+with `std.lv = TRUE` semantics: ML point estimates, standardized solution,
+standard errors, fit measures, ten Berge construct scores, product-indicator
+and two-stage interactions, second-order factors via `higherReflective`)
+matches seminr/lavaan on the same fixtures; see the tolerance notes in the
+test helpers. Robust "MLR" standard errors and scaled fit indices are not yet
+implemented — point estimates are identical to lavaan's MLR default, and SEs,
+z, p, and fit statistics correspond to lavaan's `estimator = "ML"`,
+`se = "standard"`.
 
 ## Runtimes
 
@@ -85,8 +98,57 @@ bootstrapModel({ model, nboot: 500, seed: 123 });
 
 Named forms exist for `paths`, `composite`, `reflective`, `higherComposite`,
 `multiItems`, `interactionTerm`, `quadraticTerm`, `estimatePls`,
-`bootstrapModel`, and `bootstrapModelParallel` (argument shapes are exported
-as `PathsArgs`, `CompositeArgs`, ..., `BootstrapModelParallelArgs`).
+`bootstrapModel`, `bootstrapModelParallel`, `estimateCfa`, and `estimateCbsem`
+(argument shapes are exported as `PathsArgs`, `CompositeArgs`, ...,
+`EstimateCbsemArgs`).
+
+### Covariance-based SEM (CBSEM / CFA)
+
+The same model specification estimates as a covariance-based model — seminr
+syntax first resolves to the same measurement/structural matrices the PLS
+routines use, then a maximum-likelihood estimator (equivalent to
+`lavaan::sem(..., std.lv = TRUE)`) processes them:
+
+```ts
+import {
+  constructs, reflective, multiItems, singleItem,
+  relationships, paths, associations, itemErrors,
+  estimateCfa, estimateCbsem, summarizeCbsem, nmGet,
+} from "semints";
+
+const mm = constructs(
+  reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
+  reflective("Expectation", multiItems("CUEX", [1, 2, 3])),
+  reflective("Satisfaction", multiItems("CUSA", [1, 2, 3])),
+  reflective("Complaints", singleItem("CUSCO")),
+);
+
+// free selected inter-item error covariances
+const am = associations(itemErrors("IMAG1", "CUEX2"));
+
+// CFA of the measurement model
+const cfa = estimateCfa({ data: mobi, measurementModel: mm, itemAssociations: am });
+cfa.factorLoadings;              // standardized loadings
+cfa.constructScores;             // ten Berge factor scores
+cfa.lavaanModel;                 // the equivalent lavaan syntax string
+
+// full structural model
+const sm = relationships(
+  paths({ from: ["Image", "Expectation"], to: "Satisfaction" }),
+  paths({ from: "Satisfaction", to: "Complaints" }),
+);
+const cbsem = estimateCbsem({ data: mobi, measurementModel: mm, structuralModel: sm, itemAssociations: am });
+nmGet(cbsem.pathCoef, "Image", "Satisfaction"); // standardized path coefficient
+
+const summary = summarizeCbsem(cbsem);
+summary.fit["cfi"];              // chisq, df, pvalue, cfi, tli, rmsea (+CI), srmr, aic, bic, ...
+summary.reliability;             // rhoC / AVE per construct
+summary.paths;                   // est.std, se, z, p, CIs per parameter
+```
+
+This example runs as a test in `tests/readme-example.test.ts`. CBSEM
+interactions support the `productIndicator` and `twoStage` methods, and
+second-order factors are specified with `higherReflective(name, dimensions)`.
 
 ## Parallel bootstrapping (Web Workers)
 
@@ -167,6 +229,7 @@ bun run demos/plsc-ecsi.ts           # consistent PLS (PLSc) with reflective con
 bun run demos/pls-interaction.ts     # moderation via all three interaction methods
 bun run demos/pls-higher-order.ts    # two-stage higher-order construct
 bun run demos/alternative-models.ts  # comparing alternative structural models
+bun run demos/cbsem-cfa-ecsi.ts      # covariance-based CFA + CBSEM with an interaction
 bun run demos/browser/serve.ts       # browser demo: estimation + worker bootstrap in a web page
 ```
 

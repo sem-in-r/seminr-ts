@@ -42,6 +42,19 @@ const cliDemos: Array<{ script: string; markers: string[] }> = [
     script: "demos/alternative-models.ts",
     markers: ["Alternative", "R-squared", "Loyalty"],
   },
+  {
+    script: "demos/cbsem-cfa-ecsi.ts",
+    markers: [
+      "Confirmatory Factor Analysis",
+      "CBSEM",
+      "Factor loadings",
+      "chisq",
+      "Reliability",
+      "Path coefficients",
+      "Image*Expectation",
+      "Construct correlations",
+    ],
+  },
 ];
 
 describe("CLI demos", () => {

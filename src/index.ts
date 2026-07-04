@@ -118,3 +118,45 @@ export {
 
 // Named-matrix helpers (model results carry named rows/columns)
 export { namedMatrix, nmGet, nmSet, type NamedMatrix } from "./math/matrix.ts";
+
+// -----------------------------------------------------------------------------
+// Covariance-based SEM (CBSEM/CFA), mirroring seminr's estimate_cbsem/estimate_cfa
+// -----------------------------------------------------------------------------
+
+// Specification extensions
+export { associations, itemErrors, type ItemAssociations, type ItemPair } from "./specify/associations.ts";
+export { asReflective, higherReflective } from "./specify/reflective.ts";
+
+// Estimation
+export {
+  estimateCfa,
+  type CfaModel,
+  type CbsemEstimation,
+  type EstimateCfaArgs,
+  type EstimateCbBaseOptions,
+} from "./cbsem/estimateCfa.ts";
+export {
+  estimateCbsem,
+  type CbsemModel,
+  type EstimateCbsemArgs,
+} from "./cbsem/estimateCbsem.ts";
+
+// Summaries and metrics
+export { summarizeCfa, summarizeCbsem, type CfaSummary, type CbsemSummary } from "./cbsem/summarize.ts";
+export { rhoCAve, antecedentVifs } from "./cbsem/summary.ts";
+export { fitMeasures } from "./cbsem/fitMeasures.ts";
+export { tenBergeScores, type TenBergeResult } from "./cbsem/tenBerge.ts";
+export {
+  parameterEstimatesTable,
+  standardizedSolutionTable,
+  mlStandardErrors,
+  type SolutionRow,
+  type StandardizedRow,
+} from "./cbsem/standardErrors.ts";
+
+// lavaan syntax equivalents (the `lavaanModel` field of the model objects)
+export {
+  lavaanModelSyntax,
+  lavaanifyName,
+  unlavaanifyName,
+} from "./cbsem/lavaanSyntax.ts";

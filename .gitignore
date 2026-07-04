@@ -2,6 +2,7 @@
 CLAUDE.local.md
 .claude/*
 !.claude/CLAUDE.md
+!.claude/FUTURE.md
 !.claude/settings.json
 !.claude/skills/
 

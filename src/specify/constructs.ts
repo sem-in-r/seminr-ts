@@ -25,6 +25,8 @@ export interface ConstructSpec {
   type: ConstructType;
   /** Present only on higher-order composites. */
   method?: "two_stage";
+  /** Present only on higher-order reflective constructs (CBSEM second-order factors). */
+  higherOrder?: boolean;
 }
 
 // Interaction specs are closures invoked at estimation time (specify_interactions.R).
