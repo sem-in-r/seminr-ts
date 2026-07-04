@@ -370,6 +370,9 @@ export function predictPls(
   const technique = options.technique ?? predictDA;
   const n = model.data.values.length;
   const noFolds = options.noFolds ?? n; // LOOCV by default, as seminr
+  if (noFolds < 2 || noFolds > n) {
+    throw new Error(`noFolds must be between 2 and ${n} (got ${noFolds})`);
+  }
   const ordering = options.ordering ?? defaultShuffle(n, options.seed);
   if (ordering.length !== n) throw new Error("ordering must be a permutation of all data rows");
   const folds = cutFolds(n, noFolds);

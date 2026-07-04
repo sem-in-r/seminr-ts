@@ -125,6 +125,8 @@ export function summarizePlsBoot(boot: BootModel, alpha = 0.05): PlsBootSummary 
     bootstrappedLoadings: parseBootArray(boot.outerLoadings, boot.bootLoadings, alpha),
     bootstrappedHtmt: parseBootArrayHtmt(htmt(model), boot.bootHtmt, alpha),
     bootstrappedTotalPaths: parseBootArray(totalEffects(boot.pathCoef), boot.bootTotalPaths, alpha),
+    // deliberate deviation: seminr's parse_boot_array_total_indirect hardcodes
+    // alpha = 0.05 (its alpha parameter is unused); we honor the caller's alpha
     bootstrappedTotalIndirectPaths: hasIndirect
       ? parseBootArray(totalIndirect, indirectReplications, alpha)
       : null,

@@ -10,8 +10,7 @@ import { namedMatrix, nmGet, type NamedMatrix } from "../math/matrix.ts";
 import { inverse } from "../math/solve.ts";
 import { selectColumns } from "../estimate/data.ts";
 import { constructSpecs } from "../specify/constructs.ts";
-import { antecedentVifs } from "../cbsem/summary.ts";
-import { rhoCAve } from "../cbsem/summary.ts";
+import { antecedentVifs, rhoCAve } from "../cbsem/summary.ts";
 import type { PlsModel } from "../estimate/estimatePls.ts";
 import { constructsInModel, type ConstructsInModel } from "./constructsInModel.ts";
 

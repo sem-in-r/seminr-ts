@@ -171,6 +171,9 @@ import { bootstrapModelParallel } from "semints";
 const boot = await bootstrapModelParallel(model, { nboot: 500, seed: 123 });
 // options: workers (default: hardwareConcurrency - 1), plus everything
 // bootstrapModel accepts (seed, indices, resampler, nboot)
+// Note: models estimated with a custom missing-data strategy cannot cross
+// the worker boundary — use the sequential bootstrapModel for those
+// (the builtin meanReplacement and naOmit both work).
 ```
 
 By default the worker module is spawned from
