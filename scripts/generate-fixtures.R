@@ -560,6 +560,82 @@ write_fixture("M10_missing_meanrepl", c(
 ))
 
 # ---------------------------------------------------------------------------
+# M11 — bootstrap mediation helpers on M6b (M2 ECSI bootstrap, nboot=100,
+# seed=456): specific_effect_significance (direct + 1..4 serial mediators),
+# total_indirect_ci, boot_paths_df (full replicate matrix).
+# ---------------------------------------------------------------------------
+
+ses_cases <- list(
+  direct = list(from = "Image", through = NULL, to = "Loyalty"),
+  one    = list(from = "Image", through = "Satisfaction", to = "Loyalty"),
+  two    = list(from = "Image", through = c("Expectation", "Satisfaction"), to = "Loyalty"),
+  three  = list(from = "Image", through = c("Expectation", "Satisfaction", "Complaints"), to = "Loyalty"),
+  four   = list(from = "Image", through = c("Expectation", "Quality", "Satisfaction", "Complaints"), to = "Loyalty")
+)
+
+ses_export <- function(case) {
+  res <- specific_effect_significance(m6b_boot, from = case$from,
+                                      through = case$through, to = case$to)
+  list(from = case$from,
+       through = if (is.null(case$through)) list() else as.list(case$through),
+       to = case$to,
+       label = rownames(res)[[1]],
+       columns = as.list(colnames(res)),
+       values = as.list(as.numeric(res)))
+}
+
+tic_export <- function(from, to) {
+  ci <- total_indirect_ci(m6b_boot, from = from, to = to)
+  list(from = from, to = to, names = as.list(names(ci)), values = as.list(as.numeric(ci)))
+}
+
+m11_bp <- boot_paths_df(m6b_boot)
+rownames(m11_bp) <- as.character(seq_len(nrow(m11_bp)))
+
+write_fixture("M11_mediation", list(
+  settings = list(
+    description = "specific_effect_significance / total_indirect_ci / boot_paths_df on M6b (M2 bootstrap nboot=100 seed=456), alpha=0.05"
+  ),
+  specificEffects = lapply(ses_cases, ses_export),
+  totalIndirectCis = list(
+    imageLoyalty = tic_export("Image", "Loyalty"),
+    expectationSatisfaction = tic_export("Expectation", "Satisfaction")
+  ),
+  bootPathsDf = mat(m11_bp)
+))
+
+# ---------------------------------------------------------------------------
+# M12 — direct out-of-sample prediction (predict.seminr_model) with
+# testData = mobi[1:20, ]: plain ECSI (DA + EA) and the three interaction
+# methods (DA). No RNG anywhere in this path.
+# ---------------------------------------------------------------------------
+
+m12_test <- mobi[1:20, ]
+
+direct_predict_exports <- function(model, technique) {
+  pred <- predict(model, testData = m12_test, technique = technique)
+  list(
+    predictedItems = mat(pred$predicted_items),
+    itemResiduals = mat(pred$item_residuals),
+    predictedCompositeScores = mat(pred$predicted_composite_scores),
+    compositeResiduals = mat(pred$composite_residuals),
+    actualStar = mat(pred$actual_star)
+  )
+}
+
+write_fixture("M12_direct_predict", list(
+  settings = list(
+    description = "predict(model, testData = mobi[1:20,]) on M2 (DA, EA) and M4 pi/ortho/two-stage (DA)",
+    testRows = 20
+  ),
+  m2Da = direct_predict_exports(m2, predict_DA),
+  m2Ea = direct_predict_exports(m2, predict_EA),
+  m4piDa = direct_predict_exports(m4pi, predict_DA),
+  m4orthoDa = direct_predict_exports(m4ortho, predict_DA),
+  m4tsDa = direct_predict_exports(m4ts, predict_DA)
+))
+
+# ---------------------------------------------------------------------------
 # META
 # ---------------------------------------------------------------------------
 
