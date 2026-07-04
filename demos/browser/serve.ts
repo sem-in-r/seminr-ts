@@ -1,5 +1,5 @@
 /**
- * Dev server for the browser demo. Bundles the runner (app.ts), the bootstrap
+ * Dev server for the browser demo. Bundles the runner (app.ts), the shared
  * worker, the library (served as /semints.js), and the print helpers (served
  * as /demo-utils.js) for the browser target on startup, then serves them with
  * the page, the editable example sources (snippet-*.js), and the mobi dataset.
@@ -20,7 +20,7 @@ async function buildAssets(): Promise<Map<string, string>> {
   const result = await Bun.build({
     entrypoints: [
       new URL("./app.ts", import.meta.url).pathname,
-      new URL("../../src/bootstrap/worker.ts", import.meta.url).pathname,
+      new URL("../../src/workers/worker.ts", import.meta.url).pathname,
       new URL("../../src/index.ts", import.meta.url).pathname,
       new URL("../lib/print.ts", import.meta.url).pathname,
     ],

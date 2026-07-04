@@ -6,27 +6,15 @@
  */
 
 import type { Dataset } from "../estimate/data.ts";
-import {
-  missingStrategyFromName,
-  type MissingStrategyName,
-  type PlsSettings,
-} from "../estimate/estimatePls.ts";
 import type { SMRow } from "../specify/relationships.ts";
-import {
-  deserializeMeasurementModel,
-  innerWeightsFromName,
-  type InnerWeightsName,
-  type SerializedMeasurementModel,
-} from "../specify/serialize.ts";
+import { estimationInputs, type SerializedEstimationSpec } from "../workers/spec.ts";
 import { bootReplication, type BootReplication } from "./bootstrap.ts";
 
-export interface BootstrapWorkerRequest {
+export interface BootstrapWorkerRequest extends SerializedEstimationSpec {
+  /** Discriminator for the shared dispatching worker. */
+  kind: "bootstrap";
   data: Dataset;
-  measurementModel: SerializedMeasurementModel;
   structuralModel: readonly Readonly<SMRow>[];
-  settings: PlsSettings;
-  innerWeights: InnerWeightsName;
-  missing: MissingStrategyName;
   /** 0-based resample row indices, one array per replication in this chunk. */
   indices: number[][];
 }
@@ -38,14 +26,7 @@ export interface BootstrapWorkerResponse {
 
 /** Run every replication of one chunk (used by the worker; testable inline). */
 export function runBootstrapChunk(request: BootstrapWorkerRequest): BootstrapWorkerResponse {
-  const measurementModel = deserializeMeasurementModel(request.measurementModel);
-  const options = {
-    innerWeights: innerWeightsFromName(request.innerWeights),
-    missing: missingStrategyFromName(request.missing),
-    missingValue: request.settings.missingValue,
-    maxIt: request.settings.maxIt,
-    stopCriterion: request.settings.stopCriterion,
-  };
+  const { measurementModel, options } = estimationInputs(request);
   return {
     replications: request.indices.map((indices) =>
       bootReplication(request.data, indices, measurementModel, request.structuralModel, options),

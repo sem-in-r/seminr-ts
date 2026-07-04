@@ -63,3 +63,26 @@ describe("PLS-MGA parity with seminr (M9, CUEX1 < 8)", () => {
     }
   });
 });
+
+describe("estimatePlsMgaParallel", () => {
+  it("equals the sequential estimatePlsMga given the same injected group indices", async () => {
+    const { estimatePlsMgaParallel } = await import("../../src/mga/estimatePlsMga.ts");
+    const mobi = await loadMobi();
+    const condition = getColumn(mobi, "CUEX1").map((v) => v < 8);
+    const model = m2Model();
+    const n1 = condition.filter(Boolean).length;
+    const n2 = condition.length - n1;
+    const fixed = (nboot: number, n: number): number[][] =>
+      Array.from({ length: nboot }, (_, i) =>
+        Array.from({ length: n }, (_, r) => (r * 7 + i * 13) % n),
+      );
+    const options = {
+      nboot: 6,
+      group1Indices: fixed(6, n1),
+      group2Indices: fixed(6, n2),
+    };
+    const sequential = estimatePlsMga(model, condition, options);
+    const parallel = await estimatePlsMgaParallel(model, condition, { ...options, workers: 2 });
+    expect(parallel).toEqual(sequential);
+  });
+});

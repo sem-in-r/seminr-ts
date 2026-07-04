@@ -2,7 +2,7 @@
  * Source hygiene: this is a Bun/TS-native package — relative module specifiers
  * must use .ts extensions, not the NodeNext .js convention. tsc rewrites them
  * to .js in dist via `rewriteRelativeImportExtensions`. Runtime URL strings
- * (the worker URL in src/bootstrap/parallel.ts, the browser demo's bundle
+ * (the worker URLs in the parallel modules, the browser demo bundle
  * routes) are not module specifiers and are exempt by construction: this scan
  * matches only import/export `from` clauses and dynamic import() calls.
  */

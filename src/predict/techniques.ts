@@ -78,3 +78,18 @@ export const predictEA: PredictTechnique = (sm, pathCoef, scores) => {
   }
   return out;
 };
+
+/** Serializable names for the builtin techniques (worker boundary). */
+export type PredictTechniqueName = "predict_DA" | "predict_EA";
+
+export function predictTechniqueName(fn: PredictTechnique): PredictTechniqueName {
+  if (fn === predictDA) return "predict_DA";
+  if (fn === predictEA) return "predict_EA";
+  throw new Error(
+    "Custom prediction techniques cannot cross the worker boundary; use the sequential predictPls",
+  );
+}
+
+export function predictTechniqueFromName(name: PredictTechniqueName): PredictTechnique {
+  return name === "predict_EA" ? predictEA : predictDA;
+}

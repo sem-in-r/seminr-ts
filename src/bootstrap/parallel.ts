@@ -6,8 +6,9 @@
  * sequential `bootstrapModel` for the same seed/resampler/indices.
  */
 
-import { missingStrategyName, type PlsModel } from "../estimate/estimatePls.ts";
-import { serializeMeasurementModel, innerWeightsName } from "../specify/serialize.ts";
+import type { PlsModel } from "../estimate/estimatePls.ts";
+import { serializeEstimationSpec } from "../workers/spec.ts";
+import { chunkContiguously, defaultWorkerCount, runChunkInWorker } from "../workers/pool.ts";
 import {
   resolveResamplePlan,
   summarizeBootstrap,
@@ -20,54 +21,19 @@ export interface ParallelBootstrapOptions extends BootstrapOptions {
   /** Number of workers to spawn (default: hardwareConcurrency − 1, capped at nboot). */
   workers?: number;
   /**
-   * Factory for worker instances. Defaults to spawning this package's
-   * `bootstrap/worker` module next to this file. Browser bundlers that emit
-   * the worker at a different URL should pass their own factory, e.g.
+   * Factory for worker instances. Defaults to spawning this package's shared
+   * `workers/worker` module. Browser bundlers that emit the worker at a
+   * different URL should pass their own factory, e.g.
    * `() => new Worker(new URL("semints-worker.js", import.meta.url), { type: "module" })`.
    */
   createWorker?: () => Worker;
 }
 
-function defaultWorkerCount(): number {
-  const hardware =
-    typeof navigator !== "undefined" ? navigator.hardwareConcurrency : undefined;
-  return hardware && hardware > 1 ? hardware - 1 : 4;
-}
-
 function defaultCreateWorker(): Worker {
   // Bun resolves the .js specifier to worker.ts when running from source; in
-  // the compiled dist, worker.js is a real sibling module. The literal
+  // the compiled dist, workers/worker.js is a real module. The literal
   // `new Worker(new URL(...))` form stays statically analyzable by bundlers.
-  return new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
-}
-
-function runChunkInWorker(
-  createWorker: () => Worker,
-  request: BootstrapWorkerRequest,
-): Promise<BootstrapWorkerResponse> {
-  return new Promise((resolve, reject) => {
-    const worker = createWorker();
-    const done = (finish: () => void): void => {
-      worker.terminate();
-      finish();
-    };
-    worker.onmessage = (event: MessageEvent) =>
-      done(() => resolve(event.data as BootstrapWorkerResponse));
-    worker.onerror = (event: ErrorEvent) =>
-      done(() => reject(event.error ?? new Error(`Bootstrap worker failed: ${event.message}`)));
-    worker.postMessage(request);
-  });
-}
-
-/** Split items into `parts` contiguous chunks whose sizes differ by at most one. */
-function chunkContiguously<T>(items: readonly T[], parts: number): T[][] {
-  const chunks: T[][] = [];
-  for (let p = 0; p < parts; p++) {
-    const start = Math.floor((p * items.length) / parts);
-    const end = Math.floor(((p + 1) * items.length) / parts);
-    if (end > start) chunks.push(items.slice(start, end));
-  }
-  return chunks;
+  return new Worker(new URL("../workers/worker.js", import.meta.url), { type: "module" });
 }
 
 /** Named-argument form of {@link bootstrapModelParallel} (`model` mirrors R's `seminr_model`). */
@@ -97,19 +63,20 @@ export async function bootstrapModelParallel(
     : positionalOptions;
   const plan = resolveResamplePlan(model, options);
   const base = {
+    kind: "bootstrap" as const,
     data: model.rawdata,
-    measurementModel: serializeMeasurementModel(model.measurementModel),
     structuralModel: model.structuralModel.toRows(),
-    settings: model.settings,
-    innerWeights: innerWeightsName(model.innerWeights),
-    missing: missingStrategyName(model.missing),
+    ...serializeEstimationSpec(model),
   };
   const workers = Math.min(Math.max(1, options.workers ?? defaultWorkerCount()), plan.nboot);
   const createWorker = options.createWorker ?? defaultCreateWorker;
 
   const responses = await Promise.all(
     chunkContiguously(plan.indices, workers).map((indices) =>
-      runChunkInWorker(createWorker, { ...base, indices }),
+      runChunkInWorker<BootstrapWorkerRequest, BootstrapWorkerResponse>(createWorker, {
+        ...base,
+        indices,
+      }),
     ),
   );
   return summarizeBootstrap(
