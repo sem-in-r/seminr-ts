@@ -469,6 +469,48 @@ predict_fixture("M8_predict_m4ts_da", "predict_pls on M4 two_stage, predict_DA, 
                 m4ts, predict_DA, "DA", 790)
 
 # ---------------------------------------------------------------------------
+# M9 — PLS-MGA on M2 (full ECSI), condition = CUEX1 < 8 (seminr's doc example).
+# Both groups bootstrap with seed 123 (indices re-derivable per group size).
+# ---------------------------------------------------------------------------
+
+mga_condition <- mobi$CUEX1 < 8
+m9_mga <- estimate_pls_mga(m2, mga_condition, nboot = 100, cores = 1, seed = 123)
+
+write_fixture("M9_mga_ecsi", list(
+  settings = list(
+    description = "estimate_pls_mga on M2: condition CUEX1<8, nboot=100, seed=123, cores=1",
+    nboot = 100, seed = 123,
+    condition = list(as.integer(mga_condition)),
+    group1N = sum(mga_condition), group2N = sum(!mga_condition)
+  ),
+  source = list(m9_mga$source),
+  target = list(m9_mga$target),
+  estimate = list(m9_mga$estimate),
+  group1Beta = list(m9_mga$group1_beta),
+  group2Beta = list(m9_mga$group2_beta),
+  diff = list(m9_mga$diff),
+  group1BetaMean = list(m9_mga$group1_beta_mean),
+  group2BetaMean = list(m9_mga$group2_beta_mean),
+  plsMgaP = list(m9_mga$pls_mga_p)
+))
+
+mga_indices <- function(n_group) {
+  t(vapply(seq_len(100), function(i) {
+    set.seed(123 + i)
+    sample.int(n_group, replace = TRUE)
+  }, integer(n_group)))
+}
+write_json(
+  list(settings = list(description = "R resample indices (1-based) for M9 groups: set.seed(123+i); sample.int(nGroup, replace=TRUE)",
+                       nboot = 100, seed = 123),
+       group1 = mga_indices(sum(mga_condition)),
+       group2 = mga_indices(sum(!mga_condition))),
+  "tests/fixtures/expected/mga_indices.json",
+  auto_unbox = TRUE
+)
+cat("wrote tests/fixtures/expected/mga_indices.json\n")
+
+# ---------------------------------------------------------------------------
 # META
 # ---------------------------------------------------------------------------
 

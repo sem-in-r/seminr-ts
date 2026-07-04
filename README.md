@@ -24,9 +24,10 @@ two-stage higher-order constructs, bootstrapping) matches seminr at 1e-5 on
 the mobi test suite, as does the model-evaluation suite behind
 `summarizePls`/`summarize` (reliability alpha/rhoA/rhoC/AVE, HTMT,
 Fornell-Larcker, cross-loadings, item and antecedent VIFs, f² effect sizes,
-total indirect effects, AIC/BIC, descriptives) and PLSpredict (`predictPls`:
+total indirect effects, AIC/BIC, descriptives), PLSpredict (`predictPls`:
 k-fold/LOOCV cross-validated predictions with DA/EA techniques and an LM
-benchmark). The covariance-based core (`estimateCfa`, `estimateCbsem`
+benchmark), and PLS-MGA (`estimatePlsMga`: Henseler nonparametric group
+comparison of structural paths). The covariance-based core (`estimateCfa`, `estimateCbsem`
 with `std.lv = TRUE` semantics: ML point estimates, standardized solution,
 standard errors, fit measures, ten Berge construct scores, product-indicator
 and two-stage interactions, second-order factors via `higherReflective`)

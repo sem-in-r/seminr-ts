@@ -13,8 +13,9 @@ PLS implementation complete (plan + seminr reference digest: `.claude/plans/PLAN
 - Bootstrapping (paths, loadings, weights, total effects; t-values and percentile CIs; injectable resampler; sequential + Web Worker parallel)
 - PLS evaluation suite (`src/evaluate/`): reliability (alpha/rhoA/rhoC/AVE), validity (HTMT, Fornell-Larcker, cross-loadings, item + antecedent VIFs), effects (f², paths report, total indirect effects, AIC/BIC), descriptives, missing-data report; `summarizePls` via `summarize()` dispatch
 - PLSpredict (`src/predict/`): `predictPls` k-fold/LOOCV cross-validated item + construct predictions with injectable fold ordering, DA/EA techniques, interaction-aware test-data augmentation (all three methods), LM benchmark, RMSE/MAE + construct-error summary
+- PLS-MGA (`src/mga/`): `estimatePlsMga` — group split by boolean condition, per-group bootstrap, Henseler nonparametric p-values per structural path
 - CBSEM/CFA (`estimateCbsem`/`estimateCfa`): own ML estimator equivalent to `lavaan::sem/cfa(std.lv=TRUE)` — LISREL matrices, analytic gradient, BFGS; standardized solution, cor.lv, R², expected-information SEs + solution tables, fit measures, ten Berge construct scores, rhoC/AVE, antecedent VIFs, product-indicator and two-stage interactions, second-order factors; MLR robust layer (default estimator, as seminr): Huber-White sandwich SEs + Yuan-Bentler-Mplus scaled/robust fit columns (`src/cbsem/robust.ts`)
-- Out of scope for now: plotting, MGA, FIML/missing data for CBSEM, `import_lavaan_syntax`
+- Out of scope for now: plotting, FIML/missing data for CBSEM, `import_lavaan_syntax`
 
 ## Reference implementation
 

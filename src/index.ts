@@ -136,6 +136,13 @@ export {
   type PlsPredictSummary,
 } from "./predict/metrics.ts";
 
+// PLS-MGA (multi-group analysis)
+export {
+  estimatePlsMga,
+  type PlsMgaOptions,
+  type PlsMgaPath,
+} from "./mga/estimatePlsMga.ts";
+
 // Bootstrapping
 export {
   bootstrapModel,
