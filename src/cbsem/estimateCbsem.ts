@@ -17,6 +17,7 @@ import { sampleCovariance } from "./sigma.ts";
 import { fitMl } from "./mlFit.ts";
 import { standardizedSolution, pathCoefMatrix } from "./standardize.ts";
 import { fitMeasures } from "./fitMeasures.ts";
+import { robustLayer } from "./robust.ts";
 import { tenBergeScores } from "./tenBerge.ts";
 import { combineHocLoadings } from "./hoc.ts";
 import { processCbsemInteractions } from "./interactions.ts";
@@ -176,6 +177,10 @@ function estimateCbsemImpl(
   const tenBerge = tenBergeScores(parTable, fit.matrices, std, estData);
   const pathCoef = pathCoefMatrix(parTable, std, lavSm);
 
+  const estimator = options.estimator ?? "MLR"; // seminr's default estimator
+  const robust =
+    estimator === "MLR" ? robustLayer(parTable, fit, sampleCov, estData) : undefined;
+
   return {
     kind: "cbsem",
     data: lavData,
@@ -196,7 +201,9 @@ function estimateCbsemImpl(
       fit,
       std,
       n,
-      fitMeasures: fitMeasures(parTable, sampleCov, fit, n),
+      fitMeasures: fitMeasures(parTable, sampleCov, fit, n, robust),
+      estimator,
+      robust,
     },
   };
 }

@@ -21,6 +21,7 @@ import { sampleCovariance } from "./sigma.ts";
 import { fitMl, type MlFitResult, type FitMlOptions } from "./mlFit.ts";
 import { standardizedSolution, type StandardizedSolution } from "./standardize.ts";
 import { fitMeasures } from "./fitMeasures.ts";
+import { robustLayer, type RobustLayer } from "./robust.ts";
 import { tenBergeScores } from "./tenBerge.ts";
 import { combineHocLoadings } from "./hoc.ts";
 
@@ -32,6 +33,10 @@ export interface CbsemEstimation {
   readonly std: StandardizedSolution;
   readonly n: number;
   readonly fitMeasures: Record<string, number>;
+  /** Which inference layer was estimated ("MLR" adds `robust`). */
+  readonly estimator: CbsemEstimator;
+  /** Sandwich SEs + Yuan-Bentler-Mplus scaling; present iff estimator "MLR". */
+  readonly robust?: RobustLayer;
 }
 
 export interface CfaModel {
@@ -66,7 +71,17 @@ export function hocNamesOf(mm: MeasurementModel): string[] {
     .map((e) => e.name);
 }
 
-export interface EstimateCbBaseOptions extends FitMlOptions {}
+/**
+ * Point estimates are identical under "ML" and "MLR" (as in lavaan); the
+ * estimator selects the inference layer: standard expected-information SEs and
+ * unscaled fit ("ML") vs robust sandwich SEs and scaled/robust fit ("MLR",
+ * seminr's default).
+ */
+export type CbsemEstimator = "ML" | "MLR";
+
+export interface EstimateCbBaseOptions extends FitMlOptions {
+  estimator?: CbsemEstimator;
+}
 
 /** Named-argument form of {@link estimateCfa}, mirroring R's argument names. */
 export interface EstimateCfaArgs extends EstimateCbBaseOptions {
@@ -158,6 +173,10 @@ function estimateCfaImpl(
 
   const tenBerge = tenBergeScores(parTable, fit.matrices, std, estData);
 
+  const estimator = options.estimator ?? "MLR"; // seminr's default estimator
+  const robust =
+    estimator === "MLR" ? robustLayer(parTable, fit, sampleCov, estData) : undefined;
+
   return {
     kind: "cfa",
     data: estData,
@@ -174,7 +193,9 @@ function estimateCfaImpl(
       fit,
       std,
       n,
-      fitMeasures: fitMeasures(parTable, sampleCov, fit, n),
+      fitMeasures: fitMeasures(parTable, sampleCov, fit, n, robust),
+      estimator,
+      robust,
     },
   };
 }

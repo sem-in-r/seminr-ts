@@ -26,10 +26,11 @@ with `std.lv = TRUE` semantics: ML point estimates, standardized solution,
 standard errors, fit measures, ten Berge construct scores, product-indicator
 and two-stage interactions, second-order factors via `higherReflective`)
 matches seminr/lavaan on the same fixtures; see the tolerance notes in the
-test helpers. Robust "MLR" standard errors and scaled fit indices are not yet
-implemented — point estimates are identical to lavaan's MLR default, and SEs,
-z, p, and fit statistics correspond to lavaan's `estimator = "ML"`,
-`se = "standard"`.
+test helpers. The default estimator is `"MLR"`, matching seminr: robust
+(Huber-White sandwich) standard errors plus Yuan-Bentler-Mplus scaled and
+robust fit indices (`chisq.scaled`, `cfi.robust`, `rmsea.robust`, …), with
+`estimator: "ML"` opting into plain expected-information inference. Point
+estimates are identical under both.
 
 ## Runtimes
 

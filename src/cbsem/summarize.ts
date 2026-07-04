@@ -51,13 +51,13 @@ function reliabilityOf(model: CfaModel | CbsemModel): NamedMatrix {
 }
 
 export function summarizeCfa(model: CfaModel): CfaSummary {
-  const { parTable, fit, n } = model.estimation;
+  const { parTable, fit, n, robust } = model.estimation;
   return {
     fit: model.estimation.fitMeasures,
     reliability: reliabilityOf(model),
     loadings: model.factorLoadings,
-    solution: standardizedSolutionTable(parTable, fit, n),
-    estimates: parameterEstimatesTable(parTable, fit, n),
+    solution: standardizedSolutionTable(parTable, fit, n, robust?.vcov),
+    estimates: parameterEstimatesTable(parTable, fit, n, robust?.se),
   };
 }
 
@@ -80,15 +80,15 @@ function pathsCoefficientsOf(model: CbsemModel, lavSm: SmMatrix): NamedMatrix {
 }
 
 export function summarizeCbsem(model: CbsemModel): CbsemSummary {
-  const { parTable, fit, std, n } = model.estimation;
+  const { parTable, fit, std, n, robust } = model.estimation;
   const lavSm = model.smMatrix.mapNames(lavaanifyName);
-  const solution = standardizedSolutionTable(parTable, fit, n);
+  const solution = standardizedSolutionTable(parTable, fit, n, robust?.vcov);
   return {
     fit: model.estimation.fitMeasures,
     reliability: reliabilityOf(model),
     loadings: model.factorLoadings,
     solution,
-    estimates: parameterEstimatesTable(parTable, fit, n),
+    estimates: parameterEstimatesTable(parTable, fit, n, robust?.se),
     pathsCoefficients: pathsCoefficientsOf(model, lavSm),
     paths: solution,
     antecedentVifs: antecedentVifs(

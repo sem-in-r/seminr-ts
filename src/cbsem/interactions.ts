@@ -37,7 +37,9 @@ export function processCbsemInteractions(
       // First stage: CFA of the main-effects measurement model; the
       // interaction column is the product of the ten Berge score columns.
       const mainEffectsMm = nonInteractionSpecs(mm);
-      const firstStage = estimateCfa(data, mainEffectsMm);
+      // Only the ten Berge scores (point estimates) are consumed — skip the
+      // robust inference layer.
+      const firstStage = estimateCfa(data, mainEffectsMm, undefined, { estimator: "ML" });
       const iv = getColumn(firstStage.constructScores, spec.iv);
       const moderator = getColumn(firstStage.constructScores, spec.moderator);
       const name = `${spec.iv}*${spec.moderator}_intxn`;

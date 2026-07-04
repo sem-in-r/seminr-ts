@@ -151,10 +151,12 @@ export {
   estimateCfa,
   type CfaModel,
   type CbsemEstimation,
+  type CbsemEstimator,
   type EstimateCfaArgs,
   type EstimateCfaModelArgs,
   type EstimateCbBaseOptions,
 } from "./cbsem/estimateCfa.ts";
+export { type RobustLayer } from "./cbsem/robust.ts";
 export {
   estimateCbsem,
   type CbsemModel,

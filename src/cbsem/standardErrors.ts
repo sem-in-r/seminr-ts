@@ -200,13 +200,18 @@ function rowValue(
   return matrices.theta[obsIdx]![obsIdx]!;
 }
 
-/** Unstandardized estimates with SEs, z, p, and 95% CIs (lavaan parameterEstimates). */
+/**
+ * Unstandardized estimates with SEs, z, p, and 95% CIs (lavaan
+ * parameterEstimates). Pass `seOverride` (e.g. robust sandwich SEs) to swap
+ * the expected-information SEs out.
+ */
 export function parameterEstimatesTable(
   pt: CbsemParTable,
   fit: MlFitResult,
   n: number,
+  seOverride?: readonly number[],
 ): SolutionRow[] {
-  const { se } = mlStandardErrors(pt, fit.matrices, n);
+  const se = seOverride ?? mlStandardErrors(pt, fit.matrices, n).se;
   return tableFromEstimates(
     pt,
     (i) => rowValue(pt, i, fit.matrices),
@@ -230,8 +235,9 @@ export function standardizedSolutionTable(
   pt: CbsemParTable,
   fit: MlFitResult,
   n: number,
+  vcovOverride?: Matrix,
 ): StandardizedRow[] {
-  const { vcov } = mlStandardErrors(pt, fit.matrices, n);
+  const vcov = vcovOverride ?? mlStandardErrors(pt, fit.matrices, n).vcov;
   const nRows = pt.rows.length;
 
   const stdVector = (theta: readonly number[]): number[] => {
