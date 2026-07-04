@@ -6,7 +6,7 @@
  * sequential `bootstrapModel` for the same seed/resampler/indices.
  */
 
-import type { PlsModel } from "../estimate/estimatePls.ts";
+import { missingStrategyName, type PlsModel } from "../estimate/estimatePls.ts";
 import { serializeMeasurementModel, innerWeightsName } from "../specify/serialize.ts";
 import {
   resolveResamplePlan,
@@ -102,6 +102,7 @@ export async function bootstrapModelParallel(
     structuralModel: model.structuralModel.toRows(),
     settings: model.settings,
     innerWeights: innerWeightsName(model.innerWeights),
+    missing: missingStrategyName(model.missing),
   };
   const workers = Math.min(Math.max(1, options.workers ?? defaultWorkerCount()), plan.nboot);
   const createWorker = options.createWorker ?? defaultCreateWorker;

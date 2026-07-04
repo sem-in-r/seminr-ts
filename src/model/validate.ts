@@ -100,7 +100,7 @@ export function missingDataReport(
 
   if (incompleteRows.length === 0) return `All ${data.length} observations are valid.`;
   return (
-    `Data rows ${incompleteRows.join(", ")} contain missing values and will be omitted. ` +
+    `Data rows ${incompleteRows.join(", ")} contain missing values and will be omitted.\n` +
     `Total number of complete cases: ${data.length - incompleteRows.length}`
   );
 }

@@ -4,7 +4,11 @@
  * HTMT, and total paths — the same vector seminr carries per replication.
  */
 
-import { estimatePls, type PlsModel } from "../estimate/estimatePls.ts";
+import {
+  estimatePls,
+  type MissingDataStrategy,
+  type PlsModel,
+} from "../estimate/estimatePls.ts";
 import { htmt } from "../evaluate/validity.ts";
 import { matmul, namedMatrix, nmGet, type NamedMatrix } from "../math/matrix.ts";
 import { mean, sd, quantile } from "../math/stats.ts";
@@ -68,6 +72,7 @@ export interface BootReplication {
 
 export interface BootReplicationOptions {
   innerWeights: InnerWeightsFn;
+  missing: MissingDataStrategy;
   missingValue: number | undefined;
   maxIt: number;
   stopCriterion: number;
@@ -89,6 +94,7 @@ export function bootReplication(
     const resampled = resampleRows(rawdata, indices);
     const fit = estimatePls(resampled, measurementModel, structuralModel, {
       innerWeights: options.innerWeights,
+      missing: options.missing,
       missingValue: options.missingValue,
       maxIt: options.maxIt,
       stopCriterion: options.stopCriterion,
@@ -229,6 +235,7 @@ export function bootstrapModel(
   const plan = resolveResamplePlan(model, options);
   const replicationOptions: BootReplicationOptions = {
     innerWeights: model.innerWeights,
+    missing: model.missing,
     missingValue: model.settings.missingValue,
     maxIt: model.settings.maxIt,
     stopCriterion: model.settings.stopCriterion,

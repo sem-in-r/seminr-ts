@@ -64,6 +64,10 @@ export { assessModelSpecification } from "./model/validate.ts";
 export {
   estimatePls,
   meanReplacement,
+  naOmit,
+  missingStrategyName,
+  missingStrategyFromName,
+  type MissingStrategyName,
   type PlsModel,
   type EstimatePlsOptions,
   type EstimatePlsArgs,

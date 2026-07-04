@@ -9,7 +9,7 @@
 import { namedMatrix, type NamedMatrix } from "../math/matrix.ts";
 import { version } from "../version.ts";
 import { totalEffects } from "../bootstrap/bootstrap.ts";
-import { meanReplacement, type PlsModel } from "../estimate/estimatePls.ts";
+import { naOmit, type PlsModel } from "../estimate/estimatePls.ts";
 import { isInteraction } from "../model/smMatrix.ts";
 import { constructsInModel } from "./constructsInModel.ts";
 import { reliabilityTable } from "./reliability.ts";
@@ -91,7 +91,8 @@ function compositeScores(model: PlsModel): NamedMatrix | null {
 
 /** Missing-data report, as seminr's `report_missing()`. */
 export function reportMissing(model: PlsModel): MissingDataSummary {
-  const method = model.missing === meanReplacement ? "mean_replacement" : "na.omit";
+  // seminr labels anything that is not na.omit as mean_replacement
+  const method = model.missing === naOmit ? "na.omit" : "mean_replacement";
   const mmVariables = model.firstStageModel
     ? model.firstStageModel.mmVariables
     : model.mmVariables;

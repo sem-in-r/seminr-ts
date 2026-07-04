@@ -61,6 +61,36 @@ export const meanReplacement: MissingDataStrategy = (data) => {
   return { data: { columns: data.columns, values }, warnings };
 };
 
+/**
+ * Drop rows containing any missing cell (null/NaN), as passing
+ * `stats::na.omit` to seminr's `missing` argument. The raw data keeps all
+ * rows; only the estimation data shrinks.
+ */
+export const naOmit: MissingDataStrategy = (data) => ({
+  data: {
+    columns: data.columns,
+    values: data.values.filter((row) =>
+      row.every((v) => v !== null && v !== undefined && !Number.isNaN(v)),
+    ),
+  },
+  warnings: [],
+});
+
+/** Serializable names for the builtin strategies (worker boundary). */
+export type MissingStrategyName = "mean_replacement" | "na_omit";
+
+export function missingStrategyName(fn: MissingDataStrategy): MissingStrategyName {
+  if (fn === naOmit) return "na_omit";
+  if (fn === meanReplacement) return "mean_replacement";
+  throw new Error(
+    "Custom missing-data strategies cannot cross the worker boundary; use the sequential bootstrapModel",
+  );
+}
+
+export function missingStrategyFromName(name: MissingStrategyName): MissingDataStrategy {
+  return name === "na_omit" ? naOmit : meanReplacement;
+}
+
 export interface EstimatePlsOptions {
   innerWeights?: InnerWeightsFn;
   missing?: MissingDataStrategy;
@@ -220,7 +250,8 @@ export function estimatePls(
   mmMatrix = processed.mmMatrix;
 
   validateSingleItemModeB(mmMatrix);
-  warnings.push(missingDataReport(subset.values, subset.columns, mmMatrix));
+  // seminr reports on the data AFTER the missing strategy ran (evaluate_warnings.R)
+  warnings.push(missingDataReport(estimationData.values, estimationData.columns, mmMatrix));
 
   const core = simplePls(estimationData, structuralModel, mmMatrix, {
     innerWeights,

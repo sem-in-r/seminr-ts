@@ -511,6 +511,55 @@ write_json(
 cat("wrote tests/fixtures/expected/mga_indices.json\n")
 
 # ---------------------------------------------------------------------------
+# M10 — missing-data strategies on M1: na.omit vs mean_replacement over the
+# same induced NA cells (1-based rows 3,7 IMAG1; 15 CUEX2; 3,22 PERV1).
+# Construct-score heads are exported positionally (na.omit drops rows, so
+# original rownames would not align with sequential TS row names).
+# ---------------------------------------------------------------------------
+
+mobi_missing <- mobi
+mobi_missing[c(3, 7), "IMAG1"] <- NA
+mobi_missing[15, "CUEX2"] <- NA
+mobi_missing[c(3, 22), "PERV1"] <- NA
+
+missing_exports <- function(model) {
+  scores <- model$construct_scores
+  head5 <- scores[1:5, , drop = FALSE]
+  rownames(head5) <- as.character(1:5)
+  rep <- report_missing(model)
+  list(
+    pathCoef = mat(model$path_coef),
+    outerLoadings = mat(model$outer_loadings),
+    outerWeights = mat(model$outer_weights),
+    rSquared = mat(model$rSquared),
+    iterations = model$iterations,
+    n = nrow(scores),
+    constructScoresHead = mat(head5),
+    constructScoresAbsMean = as.list(colMeans(abs(scores))),
+    missingReport = list(
+      method = rep$method,
+      nRemoved = if (is.null(rep$n_removed)) NULL else rep$n_removed,
+      variables = as.list(rep$summary$variable),
+      missingCounts = as.list(rep$summary$missing_count)
+    )
+  )
+}
+
+m10_naomit <- estimate_pls(data = mobi_missing, measurement_model = m1_mm,
+                           structural_model = m1_sm, missing = stats::na.omit)
+write_fixture("M10_missing_naomit", c(
+  list(settings = list(description = "M1 on mobi with NAs (rows 3,7 IMAG1; 15 CUEX2; 3,22 PERV1), missing = na.omit")),
+  missing_exports(m10_naomit)
+))
+
+m10_meanrepl <- estimate_pls(data = mobi_missing, measurement_model = m1_mm,
+                             structural_model = m1_sm)
+write_fixture("M10_missing_meanrepl", c(
+  list(settings = list(description = "M1 on mobi with the same NAs, missing = mean_replacement (default)")),
+  missing_exports(m10_meanrepl)
+))
+
+# ---------------------------------------------------------------------------
 # META
 # ---------------------------------------------------------------------------
 

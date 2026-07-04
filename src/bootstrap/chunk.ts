@@ -6,7 +6,11 @@
  */
 
 import type { Dataset } from "../estimate/data.ts";
-import type { PlsSettings } from "../estimate/estimatePls.ts";
+import {
+  missingStrategyFromName,
+  type MissingStrategyName,
+  type PlsSettings,
+} from "../estimate/estimatePls.ts";
 import type { SMRow } from "../specify/relationships.ts";
 import {
   deserializeMeasurementModel,
@@ -22,6 +26,7 @@ export interface BootstrapWorkerRequest {
   structuralModel: readonly Readonly<SMRow>[];
   settings: PlsSettings;
   innerWeights: InnerWeightsName;
+  missing: MissingStrategyName;
   /** 0-based resample row indices, one array per replication in this chunk. */
   indices: number[][];
 }
@@ -36,6 +41,7 @@ export function runBootstrapChunk(request: BootstrapWorkerRequest): BootstrapWor
   const measurementModel = deserializeMeasurementModel(request.measurementModel);
   const options = {
     innerWeights: innerWeightsFromName(request.innerWeights),
+    missing: missingStrategyFromName(request.missing),
     missingValue: request.settings.missingValue,
     maxIt: request.settings.maxIt,
     stopCriterion: request.settings.stopCriterion,

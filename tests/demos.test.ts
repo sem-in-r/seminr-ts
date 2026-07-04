@@ -43,6 +43,26 @@ const cliDemos: Array<{ script: string; markers: string[] }> = [
     markers: ["Alternative", "R-squared", "Loyalty"],
   },
   {
+    script: "demos/pls-assessment.ts",
+    markers: [
+      "Path Coefficients:",
+      "Reliability:",
+      "alpha",
+      "HTMT",
+      "Fornell-Larcker",
+      "AIC",
+      "Bootstrap resamples:",
+      "Bootstrapped Structural Paths:",
+      "Bootstrapped HTMT:",
+      "Bootstrapped Total Indirect Paths:",
+      "PLS in-sample metrics:",
+      "PLS out-of-sample metrics:",
+      "LM out-of-sample metrics:",
+      "Construct Level metrics:",
+      "PLS-MGA results:",
+    ],
+  },
+  {
     script: "demos/cbsem-cfa-ecsi.ts",
     markers: [
       "Confirmatory Factor Analysis",

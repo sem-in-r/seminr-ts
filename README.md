@@ -27,7 +27,9 @@ Fornell-Larcker, cross-loadings, item and antecedent VIFs, f² effect sizes,
 total indirect effects, AIC/BIC, descriptives), PLSpredict (`predictPls`:
 k-fold/LOOCV cross-validated predictions with DA/EA techniques and an LM
 benchmark), and PLS-MGA (`estimatePlsMga`: Henseler nonparametric group
-comparison of structural paths). The covariance-based core (`estimateCfa`, `estimateCbsem`
+comparison of structural paths). Missing data is handled by
+`meanReplacement` (default) or `naOmit`, matching seminr's `missing`
+argument. The covariance-based core (`estimateCfa`, `estimateCbsem`
 with `std.lv = TRUE` semantics: ML point estimates, standardized solution,
 standard errors, fit measures, ten Berge construct scores, product-indicator
 and two-stage interactions, second-order factors via `higherReflective`)
@@ -236,6 +238,7 @@ bun run demos/plsc-ecsi.ts           # consistent PLS (PLSc) with reflective con
 bun run demos/pls-interaction.ts     # moderation via all three interaction methods
 bun run demos/pls-higher-order.ts    # two-stage higher-order construct
 bun run demos/alternative-models.ts  # comparing alternative structural models
+bun run demos/pls-assessment.ts      # evaluation suite, boot summary, PLSpredict, PLS-MGA
 bun run demos/cbsem-cfa-ecsi.ts      # covariance-based CFA + CBSEM with an interaction
 bun run demos/browser/serve.ts       # browser demo: estimation + worker bootstrap in a web page
 ```
