@@ -8,15 +8,15 @@ PLS implementation complete (plan + seminr reference digest: `.claude/plans/PLAN
 
 ## Scope (implemented)
 
-- Model specification DSL: constructs, composite/reflective measurement, relationships/paths, interaction terms (product indicator, orthogonal, two-stage), higher-order constructs (two-stage composite + higher_reflective), item-error associations; named-argument call forms mirroring seminr
-- PLS estimation (simplePLS algorithm: path weighting/factorial schemes, outer modes A/B/UNIT) with PLSc correction for reflective constructs
-- Bootstrapping (paths, loadings, weights, total effects; t-values and percentile CIs; injectable resampler; sequential + Web Worker parallel)
+- Model specification DSL: constructs, composite/reflective measurement (incl. `modePlsc`), relationships/paths, interaction terms (product indicator, orthogonal, two-stage), higher-order constructs (two-stage composite + higher_reflective), item-error associations; named-argument call forms mirroring seminr; lavaan-syntax import (`csem2seminr`/`lavaan2seminr`); model traversal helpers (`allFactors`, `constructNames`, …)
+- PLS estimation (simplePLS algorithm: path weighting/factorial schemes, outer modes A/B/UNIT) with PLSc correction for reflective constructs; `rerun` re-estimation with overridden inputs
+- Bootstrapping (paths, loadings, weights, total effects; t-values and percentile CIs; injectable resampler; sequential + Web Worker parallel); mediation helpers (`specificEffectSignificance`, `totalIndirectCi`, `bootPathsDf`)
 - PLS evaluation suite (`src/evaluate/`): reliability (alpha/rhoA/rhoC/AVE), validity (HTMT, Fornell-Larcker, cross-loadings, item + antecedent VIFs), effects (f², paths report, total indirect effects, AIC/BIC), descriptives, missing-data report; `summarizePls` via `summarize()` dispatch
-- PLSpredict (`src/predict/`): `predictPls` k-fold/LOOCV cross-validated item + construct predictions with injectable fold ordering, DA/EA techniques, interaction-aware test-data augmentation (all three methods), LM benchmark, RMSE/MAE + construct-error summary
-- PLS-MGA (`src/mga/`): `estimatePlsMga` — group split by boolean condition, per-group bootstrap, Henseler nonparametric p-values per structural path
+- PLSpredict (`src/predict/`): `predictPls` k-fold/LOOCV cross-validated item + construct predictions with injectable fold ordering, DA/EA techniques, interaction-aware test-data augmentation (all three methods), LM benchmark, RMSE/MAE + construct-error summary; Web Worker parallel variant (`predictPlsParallel`); direct out-of-sample `predict(model, testData)` without CV
+- PLS-MGA (`src/mga/`): `estimatePlsMga` — group split by boolean condition, per-group bootstrap, Henseler nonparametric p-values per structural path; Web Worker parallel variant (`estimatePlsMgaParallel`)
 - Missing-data strategies: `meanReplacement` (default) and `naOmit`, threaded through f², PLSpredict, and bootstrap re-estimation (worker-safe by name); seminr-parity missing-data report and warnings
 - CBSEM/CFA (`estimateCbsem`/`estimateCfa`): own ML estimator equivalent to `lavaan::sem/cfa(std.lv=TRUE)` — LISREL matrices, analytic gradient, BFGS; standardized solution, cor.lv, R², expected-information SEs + solution tables, fit measures, ten Berge construct scores, rhoC/AVE, antecedent VIFs, product-indicator and two-stage interactions, second-order factors; MLR robust layer (default estimator, as seminr): Huber-White sandwich SEs + Yuan-Bentler-Mplus scaled/robust fit columns (`src/cbsem/robust.ts`)
-- Out of scope for now: plotting, FIML/missing data for CBSEM, `import_lavaan_syntax`
+- Out of scope for now: plotting/presentation layer, FIML/missing data for CBSEM
 
 ## Reference implementation
 
