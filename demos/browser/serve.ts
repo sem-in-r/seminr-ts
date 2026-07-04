@@ -1,27 +1,47 @@
 /**
- * Dev server for the browser demo. Bundles app.ts and the bootstrap worker
- * for the browser target on startup, then serves them with the page and the
- * mobi dataset.
+ * Dev server for the browser demo. Bundles the runner (app.ts), the bootstrap
+ * worker, the library (served as /semints.js), and the print helpers (served
+ * as /demo-utils.js) for the browser target on startup, then serves them with
+ * the page, the editable example sources (snippet-*.js), and the mobi dataset.
  *
  * Run: bun run demos/browser/serve.ts   (then open the printed URL)
  */
 import { mobiCsvUrl } from "../lib/mobi.ts";
+
+/** served name -> bundle artifact name */
+const BUNDLE_ALIASES: Record<string, string> = {
+  "app.js": "app.js",
+  "worker.js": "worker.js",
+  "semints.js": "index.js",
+  "demo-utils.js": "print.js",
+};
 
 async function buildAssets(): Promise<Map<string, string>> {
   const result = await Bun.build({
     entrypoints: [
       new URL("./app.ts", import.meta.url).pathname,
       new URL("../../src/bootstrap/worker.ts", import.meta.url).pathname,
+      new URL("../../src/index.ts", import.meta.url).pathname,
+      new URL("../lib/print.ts", import.meta.url).pathname,
     ],
     target: "browser",
   });
   if (!result.success) {
     throw new AggregateError(result.logs, "Browser demo bundling failed");
   }
-  const assets = new Map<string, string>();
+  const artifacts = new Map<string, string>();
   for (const artifact of result.outputs) {
     const name = artifact.path.split("/").pop()!;
-    assets.set(name, await artifact.text());
+    artifacts.set(name, await artifact.text());
+  }
+  const assets = new Map<string, string>();
+  for (const [served, artifact] of Object.entries(BUNDLE_ALIASES)) {
+    const code = artifacts.get(artifact);
+    if (code === undefined) throw new Error(`Missing bundle artifact ${artifact}`);
+    assets.set(served, code);
+  }
+  for (const snippet of ["snippet-pls.js", "snippet-cbsem.js"]) {
+    assets.set(snippet, await Bun.file(new URL(`./${snippet}`, import.meta.url)).text());
   }
   return assets;
 }

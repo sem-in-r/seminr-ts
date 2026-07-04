@@ -78,12 +78,44 @@ describe("browser demo server", () => {
       const base = `http://localhost:${server.port}`;
       const page = await fetch(`${base}/`);
       expect(page.status).toBe(200);
-      expect(await page.text()).toContain("semints");
+      const pageHtml = await page.text();
+      expect(pageHtml).toContain("semints");
+      // interactive mode (plan cbsem-robust Slice 4): editable code + Run,
+      // plus a picker that repopulates the box with either example (4.4)
+      expect(pageHtml).toContain('id="code"');
+      expect(pageHtml).toContain('id="run"');
+      expect(pageHtml).toContain('id="example"');
 
       const app = await fetch(`${base}/app.js`);
       expect(app.status).toBe(200);
       const appCode = await app.text();
       expect(appCode).not.toContain('from "node:');
+
+      // The demo sources served for the textarea: one PLS example, one
+      // CFA/CBSEM example incl. robust (MLR) fit columns, both importing the
+      // bare "semints" specifier.
+      const pls = await fetch(`${base}/snippet-pls.js`);
+      expect(pls.status).toBe(200);
+      const plsCode = await pls.text();
+      expect(plsCode).toContain('from "semints"');
+      expect(plsCode).toContain("estimatePls");
+      expect(plsCode).toContain("bootstrapModelParallel");
+
+      const cbsem = await fetch(`${base}/snippet-cbsem.js`);
+      expect(cbsem.status).toBe(200);
+      const cbsemCode = await cbsem.text();
+      expect(cbsemCode).toContain('from "semints"');
+      expect(cbsemCode).toContain("Confirmatory Factor Analysis");
+      expect(cbsemCode).toContain("CBSEM with Image x Expectation interaction");
+      expect(cbsemCode).toContain("chisq.scaled");
+
+      // Library + demo-utils bundles the snippet's rewritten imports resolve to
+      const lib = await fetch(`${base}/semints.js`);
+      expect(lib.status).toBe(200);
+      expect(await lib.text()).toContain("estimateCbsem");
+      const utils = await fetch(`${base}/demo-utils.js`);
+      expect(utils.status).toBe(200);
+      expect(await utils.text()).toContain("formatMatrix");
 
       const worker = await fetch(`${base}/worker.js`);
       expect(worker.status).toBe(200);

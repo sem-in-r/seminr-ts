@@ -1,62 +1,49 @@
 /**
- * Browser demo: the exact same semints API as the CLI demos, running in a web
- * page — data via fetch, bootstrap replications across Web Workers.
- * Bundled (with src/bootstrap/worker.ts) by serve.ts using Bun.build.
+ * Browser demo runner: loads the selected example (PLS or CBSEM) into an
+ * editable textarea, auto-runs it on page load, and re-runs it on demand.
+ * Snippets are evaluated as Blob ES modules after rewriting their bare
+ * "semints" / "semints/demo-utils" imports to the bundles served by serve.ts
+ * — so what you see in the box is exactly the code that runs.
  */
-import {
-  parseCsv,
-  constructs,
-  composite,
-  multiItems,
-  singleItem,
-  relationships,
-  paths,
-  estimatePls,
-  bootstrapModelParallel,
-} from "../../src/index.ts";
-import { heading, formatMatrix } from "../lib/print.ts";
 
 const out = document.getElementById("out")!;
-out.textContent = "";
-const log = (text: string): void => {
-  out.textContent += `${text}\n`;
+const codeBox = document.getElementById("code") as HTMLTextAreaElement;
+const runButton = document.getElementById("run") as HTMLButtonElement;
+const examplePicker = document.getElementById("example") as HTMLSelectElement;
+
+const EXAMPLES: Record<string, string> = {
+  pls: "/snippet-pls.js",
+  cbsem: "/snippet-cbsem.js",
 };
 
-const mobi = parseCsv(await (await fetch("/mobi.csv")).text());
-log(`Loaded mobi: ${mobi.values.length} observations x ${mobi.columns.length} indicators`);
+async function loadExample(name: string): Promise<void> {
+  const path = EXAMPLES[name] ?? EXAMPLES["pls"]!;
+  codeBox.value = await (await fetch(path)).text();
+}
 
-const mm = constructs(
-  composite("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
-  composite("Expectation", multiItems("CUEX", [1, 2, 3])),
-  composite("Quality", multiItems("PERQ", [1, 2, 3, 4, 5, 6, 7])),
-  composite("Value", multiItems("PERV", [1, 2])),
-  composite("Satisfaction", multiItems("CUSA", [1, 2, 3])),
-  composite("Complaints", singleItem("CUSCO")),
-  composite("Loyalty", multiItems("CUSL", [1, 2, 3])),
-);
-const sm = relationships(
-  paths({ from: "Image", to: ["Expectation", "Satisfaction", "Loyalty"] }),
-  paths({ from: "Expectation", to: ["Quality", "Value", "Satisfaction"] }),
-  paths({ from: "Quality", to: ["Value", "Satisfaction"] }),
-  paths({ from: "Value", to: ["Satisfaction"] }),
-  paths({ from: "Satisfaction", to: ["Complaints", "Loyalty"] }),
-  paths({ from: "Complaints", to: ["Loyalty"] }),
-);
+async function run(): Promise<void> {
+  runButton.disabled = true;
+  out.textContent = "running…";
+  const code = codeBox.value
+    .replaceAll('from "semints/demo-utils"', `from "${location.origin}/demo-utils.js"`)
+    .replaceAll('from "semints"', `from "${location.origin}/semints.js"`);
+  const moduleUrl = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+  try {
+    await import(moduleUrl);
+  } catch (error) {
+    out.textContent += `\nError: ${error instanceof Error ? error.message : String(error)}`;
+  } finally {
+    URL.revokeObjectURL(moduleUrl);
+    runButton.disabled = false;
+  }
+}
 
-const model = estimatePls({ data: mobi, measurementModel: mm, structuralModel: sm });
-log(`Estimated the ECSI model in ${model.iterations} iterations.`);
-log(heading("Path coefficients"));
-log(formatMatrix(model.pathCoef));
-log(heading("R-squared"));
-log(formatMatrix(model.rSquared));
-
-log(heading("Bootstrapping (200 replications across Web Workers)…"));
-const boot = await bootstrapModelParallel({
-  model,
-  nboot: 200,
-  seed: 123,
-  createWorker: () => new Worker("/worker.js", { type: "module" }),
+examplePicker.addEventListener("change", () => {
+  void loadExample(examplePicker.value);
 });
-log(`${boot.boots} successful replications, ${boot.fails} failed.`);
-log(heading("Bootstrapped paths"));
-log(formatMatrix(boot.pathsDescriptives));
+runButton.addEventListener("click", () => {
+  void run();
+});
+
+await loadExample(examplePicker.value);
+await run();
