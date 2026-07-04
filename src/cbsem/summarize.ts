@@ -18,6 +18,8 @@ import type { CfaModel } from "./estimateCfa.ts";
 import type { CbsemModel } from "./estimateCbsem.ts";
 import type { PlsModel } from "../estimate/estimatePls.ts";
 import { summarizePls, type PlsSummary } from "../evaluate/summarizePls.ts";
+import type { BootModel } from "../bootstrap/bootstrap.ts";
+import { summarizePlsBoot, type PlsBootSummary } from "../bootstrap/summarize.ts";
 
 export interface CfaSummary {
   fit: Record<string, number>;
@@ -110,11 +112,13 @@ export function summarizeCbsem(model: CbsemModel): CbsemSummary {
  * `summary()` generics (report_summary.R / report_cbsem.R / report_cfa.R).
  */
 export function summarize(model: PlsModel): PlsSummary;
+export function summarize(model: BootModel): PlsBootSummary;
 export function summarize(model: CfaModel): CfaSummary;
 export function summarize(model: CbsemModel): CbsemSummary;
 export function summarize(
-  model: PlsModel | CfaModel | CbsemModel,
-): PlsSummary | CfaSummary | CbsemSummary {
+  model: PlsModel | BootModel | CfaModel | CbsemModel,
+): PlsSummary | PlsBootSummary | CfaSummary | CbsemSummary {
   if (model.kind === "pls") return summarizePls(model);
+  if (model.kind === "boot") return summarizePlsBoot(model);
   return model.kind === "cbsem" ? summarizeCbsem(model) : summarizeCfa(model);
 }

@@ -125,6 +125,12 @@ export {
   type PercentileCIs,
 } from "./bootstrap/bootstrap.ts";
 export {
+  summarizePlsBoot,
+  parseBootArray,
+  parseBootArrayHtmt,
+  type PlsBootSummary,
+} from "./bootstrap/summarize.ts";
+export {
   bootstrapModelParallel,
   type ParallelBootstrapOptions,
   type BootstrapModelParallelArgs,

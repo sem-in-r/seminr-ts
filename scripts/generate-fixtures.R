@@ -259,6 +259,20 @@ write_fixture("M5b_hoc_two_stage_interaction", c(
 
 m6_boot <- bootstrap_model(m1, nboot = 200, cores = 1, seed = 123)
 
+# summary.boot_seminr_model tables; total indirect paths may be the
+# "No indirect effects" sentinel string (report_paths_and_intervals.R:353)
+boot_summary_exports <- function(bs) {
+  tip <- bs$bootstrapped_total_indirect_paths
+  list(
+    paths = mat(bs$bootstrapped_paths),
+    weights = mat(bs$bootstrapped_weights),
+    loadings = mat(bs$bootstrapped_loadings),
+    htmt = mat(bs$bootstrapped_HTMT),
+    totalPaths = mat(bs$bootstrapped_total_paths),
+    totalIndirectPaths = if (is.character(tip)) tip[[1]] else mat(tip)
+  )
+}
+
 write_fixture("M6_bootstrap", list(
   settings = list(
     description = "bootstrap_model on M1: nboot=200, seed=123, cores=1, path_weighting",
@@ -268,7 +282,9 @@ write_fixture("M6_bootstrap", list(
   pathsDescriptives = mat(m6_boot$paths_descriptives),
   loadingsDescriptives = mat(m6_boot$loadings_descriptives),
   weightsDescriptives = mat(m6_boot$weights_descriptives),
-  totalPathsDescriptives = mat(m6_boot$total_paths_descriptives)
+  totalPathsDescriptives = mat(m6_boot$total_paths_descriptives),
+  HTMTDescriptives = mat(m6_boot$HTMT_descriptives),
+  bootSummary = boot_summary_exports(summary(m6_boot))
 ))
 
 # Resample index matrix: re-derive exactly what bootstrap_model used
@@ -289,6 +305,40 @@ write_json(
   auto_unbox = TRUE
 )
 cat("wrote tests/fixtures/expected/boot_indices.json\n")
+
+# ---------------------------------------------------------------------------
+# M6b — bootstrap of M2 (full ECSI): exercises total *indirect* paths in the
+# boot summary (M1 has none). nboot=100, seed=456, single core.
+# ---------------------------------------------------------------------------
+
+m6b_boot <- bootstrap_model(m2, nboot = 100, cores = 1, seed = 456)
+
+write_fixture("M6b_bootstrap_ecsi", list(
+  settings = list(
+    description = "bootstrap_model on M2 (full ECSI): nboot=100, seed=456, cores=1, path_weighting",
+    nboot = 100, seed = 456
+  ),
+  boots = m6b_boot$boots,
+  pathsDescriptives = mat(m6b_boot$paths_descriptives),
+  HTMTDescriptives = mat(m6b_boot$HTMT_descriptives),
+  bootSummary = boot_summary_exports(summary(m6b_boot))
+))
+
+indices_m2 <- t(vapply(seq_len(100), function(i) {
+  set.seed(456 + i)
+  sample.int(n, replace = TRUE)
+}, integer(n)))
+
+write_json(
+  list(
+    settings = list(description = "R resample indices (1-based rows) for M6b: set.seed(456+i); sample.int(250, replace=TRUE)",
+                    nboot = 100, seed = 456, n = n),
+    indices = indices_m2
+  ),
+  "tests/fixtures/expected/boot_indices_m2.json",
+  auto_unbox = TRUE
+)
+cat("wrote tests/fixtures/expected/boot_indices_m2.json\n")
 
 # ---------------------------------------------------------------------------
 # M7 — evaluation/validity suite fixtures (summary.seminr_model internals)

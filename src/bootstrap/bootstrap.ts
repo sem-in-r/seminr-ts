@@ -1,11 +1,11 @@
 /**
  * Bootstrapping of a PLS model (estimate_bootstrap.R:69-346) and total effects
- * (evaluate_effects.R). HTMT is deliberately not carried (deferred with the
- * model-evaluation suite); the boot statistics are paths, loadings, weights,
- * and total paths.
+ * (evaluate_effects.R). The boot statistics are paths, loadings, weights,
+ * HTMT, and total paths — the same vector seminr carries per replication.
  */
 
 import { estimatePls, type PlsModel } from "../estimate/estimatePls.ts";
+import { htmt } from "../evaluate/validity.ts";
 import { matmul, namedMatrix, nmGet, type NamedMatrix } from "../math/matrix.ts";
 import { mean, sd, quantile } from "../math/stats.ts";
 import type { Dataset } from "../estimate/data.ts";
@@ -29,10 +29,12 @@ export interface BootModel extends Omit<PlsModel, "kind"> {
   readonly bootPaths: NamedMatrix[];
   readonly bootLoadings: NamedMatrix[];
   readonly bootWeights: NamedMatrix[];
+  readonly bootHtmt: NamedMatrix[];
   readonly bootTotalPaths: NamedMatrix[];
   readonly pathsDescriptives: NamedMatrix;
   readonly loadingsDescriptives: NamedMatrix;
   readonly weightsDescriptives: NamedMatrix;
+  readonly htmtDescriptives: NamedMatrix;
   readonly totalPathsDescriptives: NamedMatrix;
   /** Successful replications. */
   readonly boots: number;
@@ -60,6 +62,7 @@ export interface BootReplication {
   paths: NamedMatrix;
   loadings: NamedMatrix;
   weights: NamedMatrix;
+  htmt: NamedMatrix;
   totalPaths: NamedMatrix;
 }
 
@@ -94,6 +97,7 @@ export function bootReplication(
       paths: fit.pathCoef,
       loadings: fit.outerLoadings,
       weights: fit.outerWeights,
+      htmt: htmt(fit),
       totalPaths: totalEffects(fit.pathCoef),
     };
   } catch {
@@ -184,6 +188,7 @@ export function summarizeBootstrap(
   const bootPaths = kept.map((r) => r.paths);
   const bootLoadings = kept.map((r) => r.loadings);
   const bootWeights = kept.map((r) => r.weights);
+  const bootHtmt = kept.map((r) => r.htmt);
   const bootTotalPaths = kept.map((r) => r.totalPaths);
   return {
     ...model,
@@ -191,10 +196,12 @@ export function summarizeBootstrap(
     bootPaths,
     bootLoadings,
     bootWeights,
+    bootHtmt,
     bootTotalPaths,
     pathsDescriptives: buildDescriptives(model.pathCoef, bootPaths, true),
     loadingsDescriptives: buildDescriptives(model.outerLoadings, bootLoadings, false),
     weightsDescriptives: buildDescriptives(model.outerWeights, bootWeights, false),
+    htmtDescriptives: buildDescriptives(htmt(model), bootHtmt, false),
     totalPathsDescriptives: buildDescriptives(totalEffects(model.pathCoef), bootTotalPaths, true),
     boots: kept.length,
     fails: replications.length - kept.length,
