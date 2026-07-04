@@ -13,7 +13,13 @@ import {
   singleItem,
   regressionWeights,
 } from "../../src/specify/constructs.ts";
-import { interactionTerm, productIndicator } from "../../src/specify/interactions.ts";
+import {
+  interactionTerm,
+  productIndicator,
+  orthogonal,
+  twoStage,
+  type InteractionMethod,
+} from "../../src/specify/interactions.ts";
 import { paths, relationships } from "../../src/specify/relationships.ts";
 import { loadMobi } from "../helpers/fixtures.ts";
 
@@ -62,18 +68,30 @@ export function m3Model(): PlsModel {
   return estimatePls(mobi, mm, m1Sm);
 }
 
-export function m4piModel(): PlsModel {
+function m4Model(method: InteractionMethod): PlsModel {
   const mm = constructs(
     composite("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
     composite("Expectation", multiItems("CUEX", [1, 2, 3])),
     composite("Value", multiItems("PERV", [1, 2])),
     composite("Satisfaction", multiItems("CUSA", [1, 2, 3])),
-    interactionTerm("Image", "Expectation", productIndicator),
+    interactionTerm("Image", "Expectation", method),
   );
   const sm = relationships(
     paths(["Image", "Expectation", "Value", "Image*Expectation"], "Satisfaction"),
   );
   return estimatePls(mobi, mm, sm);
+}
+
+export function m4piModel(): PlsModel {
+  return m4Model(productIndicator);
+}
+
+export function m4orthoModel(): PlsModel {
+  return m4Model(orthogonal);
+}
+
+export function m4tsModel(): PlsModel {
+  return m4Model(twoStage);
 }
 
 export function m5Model(): PlsModel {

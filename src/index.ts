@@ -112,6 +112,30 @@ export {
   type MissingVariableSummary,
 } from "./evaluate/summarizePls.ts";
 
+// PLSpredict (cross-validated predictions + LM benchmark)
+export {
+  predictPls,
+  cutFolds,
+  type PredictPlsOptions,
+  type PredictPlsArgs,
+  type PlsPrediction,
+  type PlsPredictionComposites,
+  type PlsPredictionItems,
+} from "./predict/predictPls.ts";
+export {
+  predictDA,
+  predictEA,
+  constructOrder,
+  type PredictTechnique,
+} from "./predict/techniques.ts";
+export {
+  itemMetrics,
+  constructMetrics,
+  summarizePlsPredict,
+  type PlsPredictItemMetrics,
+  type PlsPredictSummary,
+} from "./predict/metrics.ts";
+
 // Bootstrapping
 export {
   bootstrapModel,

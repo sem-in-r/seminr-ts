@@ -27,7 +27,7 @@
 ## PLS follow-ups (deferred since the first plan)
 
 - ~~**HTMT + model-evaluation/reliability metrics suite**~~ — SHIPPED (branch `assessment`, PLAN.assessment.md Slice 1): `src/evaluate/` (reliability alpha|rhoA|rhoC|AVE, HTMT, Fornell-Larcker, cross-loadings, item/antecedent VIFs, f², paths report, total indirect effects, AIC/BIC, descriptives, missing-data report) + `summarizePls` wired into `summarize()` dispatch; parity vs `M7_evaluation_*` fixtures at 1e-5.
-- **PLSpredict** (`feature_plspredict.R`) — out-of-sample prediction metrics.
+- ~~**PLSpredict**~~ — SHIPPED (branch `assessment`, PLAN.assessment.md Slice 3): `src/predict/` — `predictPls` (k-fold + LOOCV, injectable fold ordering), DA/EA techniques, all three interaction predict paths, LM benchmark, RMSE/MAE + construct-error summary; parity vs `M8_predict_*` fixtures at 1e-5. seminr's `reps` argument is not ported (it re-runs CV on the same fold assignment — no RNG inside `prediction_matrices` — so it only averages identical matrices); `cores` parallelism also not ported (sequential only).
 - **PLS-MGA** (`estimate_pls_mga`) — multi-group analysis.
 - **`na.omit` missing-data strategy** — only `mean_replacement` is implemented for PLS.
 - **Plotting** (`plot_dot.R` / DiagrammeR equivalents) — likely a separate visualization package if ever.

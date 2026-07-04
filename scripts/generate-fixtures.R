@@ -400,6 +400,75 @@ write_eval_fixture("M7_evaluation_m4pi",
 write_eval_fixture("M7_evaluation_m5", "evaluation suite on M5 (HOC two-stage)", m5)
 
 # ---------------------------------------------------------------------------
+# M8 — PLSpredict (predict_pls) fixtures. The only RNG is the row shuffle
+# drawn first inside predict_pls, so set.seed(S) immediately before the call
+# pins the fold assignment; the same permutation is re-derived and exported
+# as shuffleOrder (1-based) for the TS side.
+# ---------------------------------------------------------------------------
+
+predict_exports <- function(pred) {
+  s <- summary(pred)
+  list(
+    compositesOutOfSample = mat(pred$composites$composite_out_of_sample),
+    compositesInSample = mat(pred$composites$composite_in_sample),
+    itemsOutOfSample = mat(pred$items$PLS_out_of_sample),
+    itemsInSample = mat(pred$items$PLS_in_sample),
+    lmOutOfSample = mat(pred$items$lm_out_of_sample),
+    lmInSample = mat(pred$items$lm_in_sample),
+    plsMetricsInSample = mat(s$PLS_in_sample),
+    plsMetricsOutOfSample = mat(s$PLS_out_of_sample),
+    lmMetricsInSample = mat(s$LM_in_sample),
+    lmMetricsOutOfSample = mat(s$LM_out_of_sample),
+    constructError = mat(s$construct_error)
+  )
+}
+
+predict_fixture <- function(name, description, model, technique, technique_name,
+                            seed, noFolds = 10) {
+  set.seed(seed)
+  pred <- predict_pls(model, technique = technique, noFolds = noFolds,
+                      reps = NULL, cores = NULL)
+  set.seed(seed)
+  shuffle <- sample(nrow(model$data), nrow(model$data), replace = FALSE)
+  write_fixture(name, c(
+    list(settings = list(description = description, technique = technique_name,
+                         noFolds = noFolds, seed = seed),
+         shuffleOrder = list(shuffle)),
+    predict_exports(pred)
+  ))
+}
+
+m4ortho <- estimate_pls(data = mobi, structural_model = m4_sm, measurement_model = constructs(
+  composite("Image",        multi_items("IMAG", 1:5)),
+  composite("Expectation",  multi_items("CUEX", 1:3)),
+  composite("Value",        multi_items("PERV", 1:2)),
+  composite("Satisfaction", multi_items("CUSA", 1:3)),
+  interaction_term(iv = "Image", moderator = "Expectation",
+                   method = orthogonal, weights = mode_A)
+))
+m4ts <- estimate_pls(data = mobi, structural_model = m4_sm, measurement_model = constructs(
+  composite("Image",        multi_items("IMAG", 1:5)),
+  composite("Expectation",  multi_items("CUEX", 1:3)),
+  composite("Value",        multi_items("PERV", 1:2)),
+  composite("Satisfaction", multi_items("CUSA", 1:3)),
+  interaction_term(iv = "Image", moderator = "Expectation",
+                   method = two_stage, weights = mode_A)
+))
+
+predict_fixture("M8_predict_m1_da", "predict_pls on M1, predict_DA, 10 folds",
+                m1, predict_DA, "DA", 789)
+predict_fixture("M8_predict_m2_da", "predict_pls on M2 (full ECSI), predict_DA, 10 folds",
+                m2, predict_DA, "DA", 789)
+predict_fixture("M8_predict_m2_ea", "predict_pls on M2 (full ECSI), predict_EA, 10 folds",
+                m2, predict_EA, "EA", 789)
+predict_fixture("M8_predict_m4pi_da", "predict_pls on M4 product_indicator, predict_DA, 10 folds",
+                m4pi, predict_DA, "DA", 790)
+predict_fixture("M8_predict_m4ortho_da", "predict_pls on M4 orthogonal, predict_DA, 10 folds",
+                m4ortho, predict_DA, "DA", 790)
+predict_fixture("M8_predict_m4ts_da", "predict_pls on M4 two_stage, predict_DA, 10 folds",
+                m4ts, predict_DA, "DA", 790)
+
+# ---------------------------------------------------------------------------
 # META
 # ---------------------------------------------------------------------------
 
