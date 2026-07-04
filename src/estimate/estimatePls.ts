@@ -7,6 +7,11 @@ import {
 } from "../specify/interactions.ts";
 import { MmMatrix, measurementModelItems } from "../model/mmMatrix.ts";
 import { SmMatrix, type SmMatrixInput } from "../model/smMatrix.ts";
+import {
+  extractModels,
+  isSpecifiedModel,
+  type SpecifiedModel,
+} from "../specify/specifyModel.ts";
 import { validateSingleItemModeB, missingDataReport } from "../model/validate.ts";
 import { mean } from "../math/stats.ts";
 import { selectColumns, type Dataset } from "./data.ts";
@@ -105,8 +110,21 @@ export interface EstimatePlsArgs extends EstimatePlsOptions {
   structuralModel: SmMatrixInput;
 }
 
+/** Named-argument form carrying a {@link SpecifiedModel}; components override the bundle. */
+export interface EstimatePlsModelArgs extends EstimatePlsOptions {
+  data: Dataset;
+  model: SpecifiedModel;
+  measurementModel?: MeasurementModel;
+  structuralModel?: SmMatrixInput;
+}
+
 /** Estimate a PLS-SEM model, as seminr's `estimate_pls()`. */
-export function estimatePls(args: EstimatePlsArgs): PlsModel;
+export function estimatePls(args: EstimatePlsArgs | EstimatePlsModelArgs): PlsModel;
+export function estimatePls(
+  data: Dataset,
+  model: SpecifiedModel,
+  options?: EstimatePlsOptions,
+): PlsModel;
 export function estimatePls(
   data: Dataset,
   measurementModel: MeasurementModel,
@@ -114,22 +132,39 @@ export function estimatePls(
   options?: EstimatePlsOptions,
 ): PlsModel;
 export function estimatePls(
-  dataOrArgs: Dataset | EstimatePlsArgs,
-  maybeMeasurementModel?: MeasurementModel,
-  maybeStructuralModel?: SmMatrixInput,
+  dataOrArgs: Dataset | EstimatePlsArgs | EstimatePlsModelArgs,
+  mmOrModel?: MeasurementModel | SpecifiedModel,
+  smOrOptions?: SmMatrixInput | EstimatePlsOptions,
   positionalOptions: EstimatePlsOptions = {},
 ): PlsModel {
   const named = "data" in dataOrArgs;
-  const data = named ? (dataOrArgs as EstimatePlsArgs).data : (dataOrArgs as Dataset);
-  const measurementModel = named
-    ? (dataOrArgs as EstimatePlsArgs).measurementModel
-    : maybeMeasurementModel!;
-  const structuralModel = SmMatrix.from(
-    named ? (dataOrArgs as EstimatePlsArgs).structuralModel : maybeStructuralModel!,
-  );
-  const options: EstimatePlsOptions = named
-    ? (dataOrArgs as EstimatePlsArgs)
-    : positionalOptions;
+  let data: Dataset;
+  let mm: MeasurementModel | undefined;
+  let smInput: SmMatrixInput | undefined;
+  let options: EstimatePlsOptions;
+  if (named) {
+    const args = dataOrArgs as EstimatePlsArgs & Partial<EstimatePlsModelArgs>;
+    data = args.data;
+    const extracted = extractModels(args.model, args.measurementModel, args.structuralModel);
+    mm = extracted.measurementModel;
+    smInput = extracted.structuralModel;
+    options = args;
+  } else if (isSpecifiedModel(mmOrModel)) {
+    data = dataOrArgs as Dataset;
+    const extracted = extractModels(mmOrModel);
+    mm = extracted.measurementModel;
+    smInput = extracted.structuralModel;
+    options = (smOrOptions as EstimatePlsOptions | undefined) ?? {};
+  } else {
+    data = dataOrArgs as Dataset;
+    mm = mmOrModel as MeasurementModel;
+    smInput = smOrOptions as SmMatrixInput;
+    options = positionalOptions;
+  }
+  if (!mm) throw new Error("A measurement model is required (directly or via a specified model).");
+  if (!smInput) throw new Error("A structural model is required (directly or via a specified model).");
+  const measurementModel = mm;
+  const structuralModel = SmMatrix.from(smInput);
   const {
     innerWeights = pathWeighting,
     missing = meanReplacement,

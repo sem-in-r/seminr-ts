@@ -5,6 +5,11 @@
  */
 
 import { constructSpecs, type MeasurementModel } from "../specify/constructs.ts";
+import {
+  extractModels,
+  isSpecifiedModel,
+  type SpecifiedModel,
+} from "../specify/specifyModel.ts";
 import type { ItemAssociations } from "../specify/associations.ts";
 import { MmMatrix } from "../model/mmMatrix.ts";
 import type { Dataset, ColumnMatrix } from "../estimate/data.ts";
@@ -70,7 +75,20 @@ export interface EstimateCfaArgs extends EstimateCbBaseOptions {
   itemAssociations?: ItemAssociations;
 }
 
-export function estimateCfa(args: EstimateCfaArgs): CfaModel;
+/** Named-argument form carrying a {@link SpecifiedModel}; components override the bundle. */
+export interface EstimateCfaModelArgs extends EstimateCbBaseOptions {
+  data: Dataset;
+  model: SpecifiedModel;
+  measurementModel?: MeasurementModel;
+  itemAssociations?: ItemAssociations;
+}
+
+export function estimateCfa(args: EstimateCfaArgs | EstimateCfaModelArgs): CfaModel;
+export function estimateCfa(
+  data: Dataset,
+  model: SpecifiedModel,
+  options?: EstimateCbBaseOptions,
+): CfaModel;
 export function estimateCfa(
   data: Dataset,
   measurementModel: MeasurementModel,
@@ -78,16 +96,43 @@ export function estimateCfa(
   options?: EstimateCbBaseOptions,
 ): CfaModel;
 export function estimateCfa(
-  dataOrArgs: Dataset | EstimateCfaArgs,
-  maybeMm?: MeasurementModel,
-  maybeAssociations?: ItemAssociations,
+  dataOrArgs: Dataset | EstimateCfaArgs | EstimateCfaModelArgs,
+  mmOrModel?: MeasurementModel | SpecifiedModel,
+  associationsOrOptions?: ItemAssociations | EstimateCbBaseOptions,
   maybeOptions: EstimateCbBaseOptions = {},
 ): CfaModel {
   if ("data" in dataOrArgs && !("columns" in dataOrArgs)) {
-    const { data, measurementModel, itemAssociations, ...options } = dataOrArgs;
-    return estimateCfaImpl(data, measurementModel, itemAssociations, options);
+    const { data, measurementModel, itemAssociations, ...options } =
+      dataOrArgs as EstimateCfaArgs & Partial<EstimateCfaModelArgs>;
+    const { model, ...cleanOptions } = options;
+    const extracted = extractModels(model, measurementModel, undefined, itemAssociations);
+    return estimateCfaImpl(
+      data,
+      requireMeasurementModel(extracted.measurementModel),
+      extracted.itemAssociations,
+      cleanOptions,
+    );
   }
-  return estimateCfaImpl(dataOrArgs as Dataset, maybeMm!, maybeAssociations, maybeOptions);
+  if (isSpecifiedModel(mmOrModel)) {
+    const extracted = extractModels(mmOrModel);
+    return estimateCfaImpl(
+      dataOrArgs as Dataset,
+      requireMeasurementModel(extracted.measurementModel),
+      extracted.itemAssociations,
+      (associationsOrOptions as EstimateCbBaseOptions | undefined) ?? {},
+    );
+  }
+  return estimateCfaImpl(
+    dataOrArgs as Dataset,
+    mmOrModel as MeasurementModel,
+    associationsOrOptions as ItemAssociations | undefined,
+    maybeOptions,
+  );
+}
+
+function requireMeasurementModel(mm: MeasurementModel | undefined): MeasurementModel {
+  if (!mm) throw new Error("A measurement model is required (directly or via a specified model).");
+  return mm;
 }
 
 function estimateCfaImpl(

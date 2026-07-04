@@ -26,6 +26,11 @@ import {
   type CbsemEstimation,
   type EstimateCbBaseOptions,
 } from "./estimateCfa.ts";
+import {
+  extractModels,
+  isSpecifiedModel,
+  type SpecifiedModel,
+} from "../specify/specifyModel.ts";
 
 export interface CbsemModel {
   readonly kind: "cbsem";
@@ -55,7 +60,21 @@ export interface EstimateCbsemArgs extends EstimateCbBaseOptions {
   itemAssociations?: ItemAssociations;
 }
 
-export function estimateCbsem(args: EstimateCbsemArgs): CbsemModel;
+/** Named-argument form carrying a {@link SpecifiedModel}; components override the bundle. */
+export interface EstimateCbsemModelArgs extends EstimateCbBaseOptions {
+  data: Dataset;
+  model: SpecifiedModel;
+  measurementModel?: MeasurementModel;
+  structuralModel?: SmMatrixInput;
+  itemAssociations?: ItemAssociations;
+}
+
+export function estimateCbsem(args: EstimateCbsemArgs | EstimateCbsemModelArgs): CbsemModel;
+export function estimateCbsem(
+  data: Dataset,
+  model: SpecifiedModel,
+  options?: EstimateCbBaseOptions,
+): CbsemModel;
 export function estimateCbsem(
   data: Dataset,
   measurementModel: MeasurementModel,
@@ -64,23 +83,49 @@ export function estimateCbsem(
   options?: EstimateCbBaseOptions,
 ): CbsemModel;
 export function estimateCbsem(
-  dataOrArgs: Dataset | EstimateCbsemArgs,
-  maybeMm?: MeasurementModel,
-  maybeSm?: SmMatrixInput,
+  dataOrArgs: Dataset | EstimateCbsemArgs | EstimateCbsemModelArgs,
+  mmOrModel?: MeasurementModel | SpecifiedModel,
+  smOrOptions?: SmMatrixInput | EstimateCbBaseOptions,
   maybeAssociations?: ItemAssociations,
   maybeOptions: EstimateCbBaseOptions = {},
 ): CbsemModel {
   if ("data" in dataOrArgs && !("columns" in dataOrArgs)) {
-    const { data, measurementModel, structuralModel, itemAssociations, ...options } = dataOrArgs;
-    return estimateCbsemImpl(data, measurementModel, structuralModel, itemAssociations, options);
+    const { data, measurementModel, structuralModel, itemAssociations, ...options } =
+      dataOrArgs as EstimateCbsemArgs & Partial<EstimateCbsemModelArgs>;
+    const { model, ...cleanOptions } = options;
+    const extracted = extractModels(model, measurementModel, structuralModel, itemAssociations);
+    return estimateCbsemImpl(
+      data,
+      requireComponent(extracted.measurementModel, "measurement"),
+      requireComponent(extracted.structuralModel, "structural"),
+      extracted.itemAssociations,
+      cleanOptions,
+    );
+  }
+  if (isSpecifiedModel(mmOrModel)) {
+    const extracted = extractModels(mmOrModel);
+    return estimateCbsemImpl(
+      dataOrArgs as Dataset,
+      requireComponent(extracted.measurementModel, "measurement"),
+      requireComponent(extracted.structuralModel, "structural"),
+      extracted.itemAssociations,
+      (smOrOptions as EstimateCbBaseOptions | undefined) ?? {},
+    );
   }
   return estimateCbsemImpl(
     dataOrArgs as Dataset,
-    maybeMm!,
-    maybeSm!,
+    mmOrModel as MeasurementModel,
+    smOrOptions as SmMatrixInput,
     maybeAssociations,
     maybeOptions,
   );
+}
+
+function requireComponent<T>(component: T | undefined, name: string): T {
+  if (component === undefined) {
+    throw new Error(`A ${name} model is required (directly or via a specified model).`);
+  }
+  return component;
 }
 
 function estimateCbsemImpl(

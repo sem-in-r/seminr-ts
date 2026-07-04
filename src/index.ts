@@ -67,6 +67,7 @@ export {
   type PlsModel,
   type EstimatePlsOptions,
   type EstimatePlsArgs,
+  type EstimatePlsModelArgs,
   type MissingDataStrategy,
 } from "./estimate/estimatePls.ts";
 export {
@@ -138,6 +139,12 @@ export {
   type ItemPair,
 } from "./specify/associations.ts";
 export { asReflective, higherReflective } from "./specify/reflective.ts";
+export {
+  specifyModel,
+  isSpecifiedModel,
+  type SpecifiedModel,
+  type SpecifyModelArgs,
+} from "./specify/specifyModel.ts";
 
 // Estimation
 export {
@@ -145,12 +152,14 @@ export {
   type CfaModel,
   type CbsemEstimation,
   type EstimateCfaArgs,
+  type EstimateCfaModelArgs,
   type EstimateCbBaseOptions,
 } from "./cbsem/estimateCfa.ts";
 export {
   estimateCbsem,
   type CbsemModel,
   type EstimateCbsemArgs,
+  type EstimateCbsemModelArgs,
 } from "./cbsem/estimateCbsem.ts";
 
 // Summaries and metrics
