@@ -16,6 +16,8 @@ import {
 } from "./standardErrors.ts";
 import type { CfaModel } from "./estimateCfa.ts";
 import type { CbsemModel } from "./estimateCbsem.ts";
+import type { PlsModel } from "../estimate/estimatePls.ts";
+import { summarizePls, type PlsSummary } from "../evaluate/summarizePls.ts";
 
 export interface CfaSummary {
   fit: Record<string, number>;
@@ -105,10 +107,14 @@ export function summarizeCbsem(model: CbsemModel): CbsemSummary {
 
 /**
  * Polymorphic summary dispatch by model kind, the TS analog of seminr's S3
- * `summary()` generics (report_cbsem.R / report_cfa.R).
+ * `summary()` generics (report_summary.R / report_cbsem.R / report_cfa.R).
  */
+export function summarize(model: PlsModel): PlsSummary;
 export function summarize(model: CfaModel): CfaSummary;
 export function summarize(model: CbsemModel): CbsemSummary;
-export function summarize(model: CfaModel | CbsemModel): CfaSummary | CbsemSummary {
+export function summarize(
+  model: PlsModel | CfaModel | CbsemModel,
+): PlsSummary | CfaSummary | CbsemSummary {
+  if (model.kind === "pls") return summarizePls(model);
   return model.kind === "cbsem" ? summarizeCbsem(model) : summarizeCfa(model);
 }

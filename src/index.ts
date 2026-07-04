@@ -6,7 +6,7 @@
  * {@link estimatePls}, and resample with {@link bootstrapModel}.
  */
 
-export const version = "0.1.0";
+export { version } from "./version.ts";
 
 // Model specification DSL
 export {
@@ -84,6 +84,33 @@ export {
 export { rhoA } from "./estimate/consistent.ts";
 export type { Dataset } from "./estimate/data.ts";
 export { parseCsv } from "./data/csv.ts";
+
+// PLS model evaluation (reliability/validity/effects/descriptives) and summary
+export { constructsInModel, type ConstructsInModel } from "./evaluate/constructsInModel.ts";
+export { cronbachsAlpha, reliabilityTable } from "./evaluate/reliability.ts";
+export {
+  htmt,
+  flCriteriaTable,
+  crossLoadings,
+  itemVifs,
+  plsAntecedentVifs,
+} from "./evaluate/validity.ts";
+export {
+  fSquared,
+  modelFsquares,
+  reportPaths,
+  totalIndirectEffects,
+  itCriteria,
+} from "./evaluate/effects.ts";
+export { desc, descriptives, type PlsDescriptives } from "./evaluate/descriptives.ts";
+export {
+  summarizePls,
+  reportMissing,
+  type PlsSummary,
+  type PlsValiditySummary,
+  type MissingDataSummary,
+  type MissingVariableSummary,
+} from "./evaluate/summarizePls.ts";
 
 // Bootstrapping
 export {

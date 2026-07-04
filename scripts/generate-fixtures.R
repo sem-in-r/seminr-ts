@@ -31,7 +31,8 @@ mat <- function(m) {
 
 write_fixture <- function(name, obj) {
   path <- file.path("tests/fixtures/expected", paste0(name, ".json"))
-  write_json(obj, path, digits = NA, auto_unbox = TRUE, pretty = TRUE, null = "null")
+  write_json(obj, path, digits = NA, auto_unbox = TRUE, pretty = TRUE,
+             null = "null", na = "null")
   cat("wrote", path, "\n")
 }
 
@@ -288,6 +289,65 @@ write_json(
   auto_unbox = TRUE
 )
 cat("wrote tests/fixtures/expected/boot_indices.json\n")
+
+# ---------------------------------------------------------------------------
+# M7 — evaluation/validity suite fixtures (summary.seminr_model internals)
+#
+# One fixture per model so the M1..M6 files stay byte-identical. NAs are
+# serialized as JSON null (na = "null" in write_fixture).
+# ---------------------------------------------------------------------------
+
+# named-vector list (item_vifs / antecedent_vifs) -> named JSON objects
+vif_list <- function(vifs) lapply(unclass(vifs), function(v) as.list(unclass(v)))
+
+eval_exports <- function(model) {
+  mc <- constructs_in_model(model)
+  d <- descriptives(model)
+  list(
+    reliability = mat(reliability(model)),
+    htmt = mat(HTMT(model)),
+    flCriteria = mat(fl_criteria_table(model, mc)),
+    crossLoadings = mat(cross_loadings(model, mc)),
+    itemVifs = vif_list(item_vifs(model, mc)),
+    antecedentVifs = vif_list(antecedent_vifs(model$smMatrix, stats::cor(mc$construct_scores))),
+    fSquare = mat(model_fsquares(model)),
+    pathsReport = mat(report_paths(model)),
+    totalEffects = mat(total_effects(model$path_coef)),
+    totalIndirectEffects = mat(total_indirect_effects(model$path_coef)),
+    itCriteria = mat(calculate_itcriteria(model)),
+    descriptives = list(
+      itemStatistics = mat(d$statistics$items),
+      constructStatistics = mat(d$statistics$constructs),
+      itemCorrelations = mat(d$correlations$items),
+      constructCorrelations = mat(d$correlations$constructs)
+    )
+  )
+}
+
+write_eval_fixture <- function(name, description, model) {
+  write_fixture(name, c(
+    list(settings = list(description = description)),
+    eval_exports(model)
+  ))
+}
+
+write_eval_fixture("M7_evaluation_m1", "evaluation suite on M1 (basic composite)", m1)
+write_eval_fixture("M7_evaluation_m2", "evaluation suite on M2 (full ECSI)", m2)
+write_eval_fixture("M7_evaluation_m3", "evaluation suite on M3 (reflective PLSc)", m3)
+
+m4pi_mm <- constructs(
+  composite("Image",        multi_items("IMAG", 1:5)),
+  composite("Expectation",  multi_items("CUEX", 1:3)),
+  composite("Value",        multi_items("PERV", 1:2)),
+  composite("Satisfaction", multi_items("CUSA", 1:3)),
+  interaction_term(iv = "Image", moderator = "Expectation",
+                   method = product_indicator, weights = mode_A)
+)
+m4pi <- estimate_pls(data = mobi, measurement_model = m4pi_mm, structural_model = m4_sm)
+write_eval_fixture("M7_evaluation_m4pi",
+                   "evaluation suite on M4 product_indicator interaction", m4pi)
+
+write_eval_fixture("M7_evaluation_m5", "evaluation suite on M5 (HOC two-stage)", m5)
 
 # ---------------------------------------------------------------------------
 # META

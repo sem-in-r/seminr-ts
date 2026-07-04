@@ -85,6 +85,11 @@ export interface PlsModel extends SimplePlsModel {
   readonly measurementModel: MeasurementModel;
   readonly structuralModel: SmMatrix;
   readonly settings: PlsSettings;
+  /**
+   * Missing-data strategy used during estimation (kept outside `settings` so
+   * settings stay structured-clone safe for the worker bootstrap).
+   */
+  readonly missing: MissingDataStrategy;
   /** Messages produced during estimation (missing-data report, cleaning warnings). */
   readonly warnings: string[];
   /** Per-interaction parameters (iv/moderator names, ortho coefficients), when interactions exist. */
@@ -231,6 +236,7 @@ export function estimatePls(
     measurementModel,
     structuralModel,
     settings: { missingValue, maxIt, stopCriterion },
+    missing,
     warnings,
     ...(interactions.length > 0 ? { interactionParams: processed.interactionParams } : {}),
   };

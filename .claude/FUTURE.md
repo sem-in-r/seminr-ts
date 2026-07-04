@@ -26,7 +26,7 @@
 
 ## PLS follow-ups (deferred since the first plan)
 
-- **HTMT + model-evaluation/reliability metrics suite** — `evaluate_*` family (Cronbach alpha, full rho_A reporting, fornell-larcker, item VIFs, fLoadings diagnostics). Unblocks the documented gap in the bootstrap vector layout where seminr carries HTMT (old plan Q5).
+- ~~**HTMT + model-evaluation/reliability metrics suite**~~ — SHIPPED (branch `assessment`, PLAN.assessment.md Slice 1): `src/evaluate/` (reliability alpha|rhoA|rhoC|AVE, HTMT, Fornell-Larcker, cross-loadings, item/antecedent VIFs, f², paths report, total indirect effects, AIC/BIC, descriptives, missing-data report) + `summarizePls` wired into `summarize()` dispatch; parity vs `M7_evaluation_*` fixtures at 1e-5.
 - **PLSpredict** (`feature_plspredict.R`) — out-of-sample prediction metrics.
 - **PLS-MGA** (`estimate_pls_mga`) — multi-group analysis.
 - **`na.omit` missing-data strategy** — only `mean_replacement` is implemented for PLS.

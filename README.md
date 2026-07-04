@@ -21,7 +21,10 @@ implementation.
 Early development — not yet published. The PLS estimation core (composite and
 reflective/PLSc models, path weighting/factorial schemes, interactions,
 two-stage higher-order constructs, bootstrapping) matches seminr at 1e-5 on
-the mobi test suite. The covariance-based core (`estimateCfa`, `estimateCbsem`
+the mobi test suite, as does the model-evaluation suite behind
+`summarizePls`/`summarize` (reliability alpha/rhoA/rhoC/AVE, HTMT,
+Fornell-Larcker, cross-loadings, item and antecedent VIFs, f² effect sizes,
+total indirect effects, AIC/BIC, descriptives). The covariance-based core (`estimateCfa`, `estimateCbsem`
 with `std.lv = TRUE` semantics: ML point estimates, standardized solution,
 standard errors, fit measures, ten Berge construct scores, product-indicator
 and two-stage interactions, second-order factors via `higherReflective`)

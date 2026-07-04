@@ -95,6 +95,13 @@ export class SmMatrix {
     return this.constructNames().some(isInteraction);
   }
 
+  /** Remove a single source -> target path, as seminr's `remove_path()`. */
+  removePath(source: string, target: string): SmMatrix {
+    return new SmMatrix(
+      this.rows.filter((r) => !(r.source === source && r.target === target)),
+    );
+  }
+
   removePathsTo(targets: readonly string[]): SmMatrix {
     return new SmMatrix(this.rows.filter((r) => !targets.includes(r.target)));
   }

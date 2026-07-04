@@ -56,6 +56,57 @@ export async function loadMobi(): Promise<Dataset> {
   return mobiCache;
 }
 
+/**
+ * Like {@link expectMatrixClose} but tolerant of missing cells: fixture nulls
+ * (R NAs) must correspond to NaN cells in the actual matrix, and vice versa.
+ */
+export function expectMatrixCloseNa(
+  actual: NamedMatrix,
+  expected: FixtureMatrix,
+  tolerance: number,
+  label: string,
+): void {
+  expect(actual.rows).toEqual(expected.rows);
+  expect(actual.cols).toEqual(expected.cols);
+  for (let i = 0; i < expected.rows.length; i++) {
+    for (let j = 0; j < expected.cols.length; j++) {
+      const a = actual.values[i]![j]!;
+      const e = expected.values[i]![j] as number | null;
+      const cell = `${label}[${expected.rows[i]}, ${expected.cols[j]}]`;
+      if (e === null || Number.isNaN(e)) {
+        if (!Number.isNaN(a)) throw new Error(`${cell}: got ${a}, expected NA`);
+      } else if (Number.isNaN(a) || Math.abs(a - e) > tolerance) {
+        throw new Error(`${cell}: got ${a}, expected ${e} (|diff| > ${tolerance})`);
+      }
+    }
+  }
+}
+
+/**
+ * Assert a nested Record (e.g. VIF lists) matches the fixture object: same
+ * keys in the same order, values within tolerance, null <-> NaN.
+ */
+export function expectRecordClose(
+  actual: Record<string, Record<string, number>>,
+  expected: Record<string, Record<string, number | null>>,
+  tolerance: number,
+  label: string,
+): void {
+  expect(Object.keys(actual)).toEqual(Object.keys(expected));
+  for (const [group, entries] of Object.entries(expected)) {
+    expect(Object.keys(actual[group]!)).toEqual(Object.keys(entries));
+    for (const [key, e] of Object.entries(entries)) {
+      const a = actual[group]![key]!;
+      const cell = `${label}[${group}][${key}]`;
+      if (e === null || Number.isNaN(e)) {
+        if (!Number.isNaN(a)) throw new Error(`${cell}: got ${a}, expected NA`);
+      } else if (Number.isNaN(a) || Math.abs(a - e) > tolerance) {
+        throw new Error(`${cell}: got ${a}, expected ${e} (|diff| > ${tolerance})`);
+      }
+    }
+  }
+}
+
 /** Assert every cell of a NamedMatrix matches the fixture matrix within tolerance. */
 export function expectMatrixClose(
   actual: NamedMatrix,
