@@ -21,6 +21,7 @@ export {
   unitWeights,
   modeA,
   modeB,
+  modePlsc,
   type WeightMarker,
   type ConstructType,
   type ConstructSpec,
@@ -59,6 +60,14 @@ export {
 export { MmMatrix, type MMRow } from "./model/mmMatrix.ts";
 export { SmMatrix, isInteraction, type SmMatrixInput } from "./model/smMatrix.ts";
 export { assessModelSpecification } from "./model/validate.ts";
+export {
+  allFactors,
+  allComposites,
+  constructNames,
+  constructItems,
+  constructType,
+  constructMode,
+} from "./model/helpers.ts";
 
 // Estimation
 export {
@@ -86,6 +95,7 @@ export {
   type OuterModeFn,
 } from "./estimate/schemes.ts";
 export { rhoA } from "./estimate/consistent.ts";
+export { rerun, type RerunOverrides } from "./estimate/rerun.ts";
 export type { Dataset } from "./estimate/data.ts";
 export { parseCsv } from "./data/csv.ts";
 
@@ -105,6 +115,7 @@ export {
   reportPaths,
   totalIndirectEffects,
   itCriteria,
+  computeItCriteriaWeights,
 } from "./evaluate/effects.ts";
 export { desc, descriptives, type PlsDescriptives } from "./evaluate/descriptives.ts";
 export {
@@ -115,6 +126,13 @@ export {
   type MissingDataSummary,
   type MissingVariableSummary,
 } from "./evaluate/summarizePls.ts";
+
+// Direct out-of-sample prediction (no cross-validation)
+export {
+  predict,
+  type PredictModelOptions,
+  type PredictedModel,
+} from "./predict/predict.ts";
 
 // PLSpredict (cross-validated predictions + LM benchmark)
 export {
@@ -139,11 +157,28 @@ export {
   type PlsPredictItemMetrics,
   type PlsPredictSummary,
 } from "./predict/metrics.ts";
+export {
+  predictPlsParallel,
+  type ParallelPredictPlsOptions,
+  type PredictPlsParallelArgs,
+} from "./predict/parallel.ts";
+export {
+  runPredictFoldChunk,
+  type PredictWorkerRequest,
+  type PredictWorkerResponse,
+} from "./predict/chunk.ts";
+export {
+  predictTechniqueName,
+  predictTechniqueFromName,
+  type PredictTechniqueName,
+} from "./predict/techniques.ts";
 
 // PLS-MGA (multi-group analysis)
 export {
   estimatePlsMga,
+  estimatePlsMgaParallel,
   type PlsMgaOptions,
+  type PlsMgaParallelOptions,
   type PlsMgaPath,
 } from "./mga/estimatePlsMga.ts";
 
@@ -163,8 +198,17 @@ export {
   summarizePlsBoot,
   parseBootArray,
   parseBootArrayHtmt,
+  bootPathsDf,
   type PlsBootSummary,
 } from "./bootstrap/summarize.ts";
+export {
+  specificEffectSignificance,
+  totalIndirectCi,
+  type SpecificEffectSignificance,
+  type SpecificEffectOptions,
+  type TotalIndirectCi,
+  type TotalIndirectCiOptions,
+} from "./bootstrap/mediation.ts";
 export {
   bootstrapModelParallel,
   type ParallelBootstrapOptions,
@@ -213,6 +257,7 @@ export {
   type SpecifiedModel,
   type SpecifyModelArgs,
 } from "./specify/specifyModel.ts";
+export { csem2seminr, lavaan2seminr } from "./specify/importLavaanSyntax.ts";
 
 // Estimation
 export {
