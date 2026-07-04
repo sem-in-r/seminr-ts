@@ -6,7 +6,7 @@
  * bootstrap p-value.
  */
 
-import { namedMatrix, type NamedMatrix } from "../math/matrix.ts";
+import { namedMatrix, nmGet, type NamedMatrix } from "../math/matrix.ts";
 import { mean, sd, quantile } from "../math/stats.ts";
 import { htmt } from "../evaluate/validity.ts";
 import { totalIndirectEffects } from "../evaluate/effects.ts";
@@ -93,6 +93,20 @@ export function parseBootArrayHtmt(
     tNumerator: (o) => 1 - o,
     pReference: 1,
   });
+}
+
+/**
+ * All path bootstraps as a replication-by-path matrix, as seminr's
+ * `boot_paths_df` (boot_utils.R:30-45): one column per declared structural
+ * path labeled "source -> target", one row per bootstrap replication.
+ */
+export function bootPathsDf(boot: BootModel): NamedMatrix {
+  const paths = boot.smMatrix.toRows();
+  const rows = boot.bootPaths.map((_, k) => String(k + 1));
+  const values = boot.bootPaths.map((rep) =>
+    paths.map((p) => nmGet(rep, p.source, p.target)),
+  );
+  return namedMatrix(rows, paths.map((p) => `${p.source} -> ${p.target}`), values);
 }
 
 export interface PlsBootSummary {
