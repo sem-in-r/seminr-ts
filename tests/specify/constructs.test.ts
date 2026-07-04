@@ -11,6 +11,7 @@ import {
   unitWeights,
   modeA,
   modeB,
+  modePlsc,
   constructSpecs,
   interactionSpecs,
   nonInteractionSpecs,
@@ -68,6 +69,12 @@ describe("composite", () => {
     expect(composite("X", ["x1"], modeA).type).toBe("A");
     expect(composite("X", ["x1"], modeB).type).toBe("B");
     expect(modeA === correlationWeights).toBe(true);
+  });
+
+  it("maps modePlsc weights to type C, equal to reflective()", () => {
+    const c = composite("Image", multiItems("IMAG", [1, 2]), modePlsc);
+    expect(c.type).toBe("C");
+    expect(c).toEqual(reflective("Image", multiItems("IMAG", [1, 2])));
   });
 
   it("accepts the named form composite({constructName, itemNames, weights?})", () => {

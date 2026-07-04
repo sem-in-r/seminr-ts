@@ -7,7 +7,11 @@
 /** mmMatrix type codes (helpers-mmMatrix.R). */
 export type ConstructType = "C" | "A" | "B" | "UNIT" | "HOCA" | "HOCB";
 
-export type WeightMarker = "correlation_weights" | "regression_weights" | "unit_weights";
+export type WeightMarker =
+  | "correlation_weights"
+  | "regression_weights"
+  | "unit_weights"
+  | "mode_plsc";
 
 export const correlationWeights: WeightMarker = "correlation_weights";
 export const regressionWeights: WeightMarker = "regression_weights";
@@ -16,6 +20,8 @@ export const unitWeights: WeightMarker = "unit_weights";
 export const modeA = correlationWeights;
 /** Alias for {@link regressionWeights} (Mode B). */
 export const modeB = regressionWeights;
+/** Mode A weights + PLSc disattenuation (type "C"), as seminr's `mode_plsc`; equivalent to `reflective()`. */
+export const modePlsc: WeightMarker = "mode_plsc";
 
 export interface ConstructSpec {
   kind: "construct";
@@ -73,6 +79,7 @@ const weightToType: Record<WeightMarker, ConstructType> = {
   correlation_weights: "A",
   regression_weights: "B",
   unit_weights: "UNIT",
+  mode_plsc: "C",
 };
 
 /** Named-argument form of {@link composite}, mirroring R's argument names. */

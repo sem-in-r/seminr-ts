@@ -119,3 +119,20 @@ export function itCriteria(model: PlsModel): NamedMatrix {
   }
   return out;
 }
+
+/**
+ * Akaike weights over a vector of IT-criterion values (one per candidate
+ * model), as seminr's `compute_itcriteria_weights` (compute_metrics.R:102-107).
+ * Deliberate deviation: seminr's `min()` is poisoned by any NA (its
+ * `na.rm = TRUE` only guards the sum); here NaN entries are skipped in both
+ * the minimum and the sum, honoring the evident na.rm intent — a NaN entry
+ * yields a NaN weight without corrupting the others.
+ */
+export function computeItCriteriaWeights(itCriteriaValues: readonly number[]): number[] {
+  const finite = itCriteriaValues.filter((v) => !Number.isNaN(v));
+  const min = Math.min(...finite);
+  const relLikelihoods = itCriteriaValues.map((v) => Math.exp(-0.5 * (v - min)));
+  let sum = 0;
+  for (const r of relLikelihoods) if (!Number.isNaN(r)) sum += r;
+  return relLikelihoods.map((r) => r / sum);
+}
