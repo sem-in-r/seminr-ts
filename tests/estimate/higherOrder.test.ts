@@ -8,6 +8,7 @@ import {
   singleItem,
 } from "../../src/specify/constructs.ts";
 import { paths, relationships } from "../../src/specify/relationships.ts";
+import { SmMatrix } from "../../src/model/smMatrix.ts";
 import { pathWeighting } from "../../src/estimate/schemes.ts";
 import { loadMobi } from "../helpers/fixtures.ts";
 
@@ -17,10 +18,10 @@ describe("expandHocToLocs", () => {
   const hoc = higherComposite("S", ["A", "B"]);
 
   it("rewires antecedent and outcome paths of the HOC to its dimensions", () => {
-    const sm = relationships(paths("E", "S"), paths("S", "C"));
+    const sm = SmMatrix.fromRows(relationships(paths("E", "S"), paths("S", "C")));
     const { sm: rewired, dimensions } = expandHocToLocs(hoc, sm);
     expect(dimensions).toEqual(["A", "B"]);
-    expect(rewired).toEqual([
+    expect(rewired.toRows()).toEqual([
       { source: "E", target: "A" },
       { source: "E", target: "B" },
       { source: "A", target: "C" },
@@ -29,9 +30,9 @@ describe("expandHocToLocs", () => {
   });
 
   it("leaves models without paths into the HOC intact on the antecedent side", () => {
-    const sm = relationships(paths("S", "C"));
+    const sm = SmMatrix.fromRows(relationships(paths("S", "C")));
     const { sm: rewired } = expandHocToLocs(hoc, sm);
-    expect(rewired).toEqual([
+    expect(rewired.toRows()).toEqual([
       { source: "A", target: "C" },
       { source: "B", target: "C" },
     ]);
@@ -48,9 +49,11 @@ describe("prepareHigherOrderModel (M5 model on mobi)", () => {
     composite("Complaints", singleItem("CUSCO")),
     composite("Loyalty", multiItems("CUSL", [1, 2, 3])),
   );
-  const sm = relationships(
-    paths(["Expectation", "Quality"], "Satisfaction"),
-    paths("Satisfaction", ["Complaints", "Loyalty"]),
+  const sm = SmMatrix.fromRows(
+    relationships(
+      paths(["Expectation", "Quality"], "Satisfaction"),
+      paths("Satisfaction", ["Complaints", "Loyalty"]),
+    ),
   );
 
   it("appends the dimension score columns to the data", () => {

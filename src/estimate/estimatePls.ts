@@ -1,12 +1,12 @@
 /** estimate_pls orchestration (seminr estimate_pls.R:103-206) and missing-data handling (clean_data.R). */
 
-import type { MeasurementModel, InteractionSpec } from "../specify/constructs.ts";
+import { interactionSpecs, type MeasurementModel } from "../specify/constructs.ts";
 import {
   processInteractions,
   type InteractionParams,
 } from "../specify/interactions.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
-import { buildMmMatrix, measurementModelItems, type MMMatrix } from "../model/mmMatrix.ts";
+import { MmMatrix, measurementModelItems } from "../model/mmMatrix.ts";
+import { SmMatrix, type SmMatrixInput } from "../model/smMatrix.ts";
 import { validateSingleItemModeB, missingDataReport } from "../model/validate.ts";
 import { mean } from "../math/stats.ts";
 import { selectColumns, type Dataset } from "./data.ts";
@@ -66,27 +66,28 @@ export interface EstimatePlsOptions {
 }
 
 export interface PlsSettings {
-  missingValue: number | undefined;
-  maxIt: number;
-  stopCriterion: number;
+  readonly missingValue: number | undefined;
+  readonly maxIt: number;
+  readonly stopCriterion: number;
 }
 
 export interface PlsModel extends SimplePlsModel {
+  readonly kind: "pls";
   /** Data actually estimated on: measured items, cleaned (and later augmented). */
-  data: Dataset;
+  readonly data: Dataset;
   /** Input data with missing markers replaced by NaN. */
-  rawdata: Dataset;
-  measurementModel: MeasurementModel;
-  structuralModel: SMMatrix;
-  settings: PlsSettings;
+  readonly rawdata: Dataset;
+  readonly measurementModel: MeasurementModel;
+  readonly structuralModel: SmMatrix;
+  readonly settings: PlsSettings;
   /** Messages produced during estimation (missing-data report, cleaning warnings). */
-  warnings: string[];
+  readonly warnings: string[];
   /** Per-interaction parameters (iv/moderator names, ortho coefficients), when interactions exist. */
-  interactionParams?: Record<string, InteractionParams>;
+  readonly interactionParams?: Record<string, InteractionParams>;
   /** First-stage model when the model contains higher-order constructs. */
-  firstStageModel?: PlsModel;
+  readonly firstStageModel?: PlsModel;
   /** True when the model contains higher-order constructs. */
-  hoc?: boolean;
+  readonly hoc?: boolean;
 }
 
 function replaceMissingMarkers(data: Dataset, missingValue: number | undefined): Dataset {
@@ -101,7 +102,7 @@ function replaceMissingMarkers(data: Dataset, missingValue: number | undefined):
 export interface EstimatePlsArgs extends EstimatePlsOptions {
   data: Dataset;
   measurementModel: MeasurementModel;
-  structuralModel: SMMatrix;
+  structuralModel: SmMatrixInput;
 }
 
 /** Estimate a PLS-SEM model, as seminr's `estimate_pls()`. */
@@ -109,13 +110,13 @@ export function estimatePls(args: EstimatePlsArgs): PlsModel;
 export function estimatePls(
   data: Dataset,
   measurementModel: MeasurementModel,
-  structuralModel: SMMatrix,
+  structuralModel: SmMatrixInput,
   options?: EstimatePlsOptions,
 ): PlsModel;
 export function estimatePls(
   dataOrArgs: Dataset | EstimatePlsArgs,
   maybeMeasurementModel?: MeasurementModel,
-  maybeStructuralModel?: SMMatrix,
+  maybeStructuralModel?: SmMatrixInput,
   positionalOptions: EstimatePlsOptions = {},
 ): PlsModel {
   const named = "data" in dataOrArgs;
@@ -123,9 +124,9 @@ export function estimatePls(
   const measurementModel = named
     ? (dataOrArgs as EstimatePlsArgs).measurementModel
     : maybeMeasurementModel!;
-  const structuralModel = named
-    ? (dataOrArgs as EstimatePlsArgs).structuralModel
-    : maybeStructuralModel!;
+  const structuralModel = SmMatrix.from(
+    named ? (dataOrArgs as EstimatePlsArgs).structuralModel : maybeStructuralModel!,
+  );
   const options: EstimatePlsOptions = named
     ? (dataOrArgs as EstimatePlsArgs)
     : positionalOptions;
@@ -165,11 +166,9 @@ export function estimatePls(
     firstStageModel = prepared.firstStageModel;
   }
 
-  let mmMatrix: MMMatrix = buildMmMatrix(measurementModel);
+  let mmMatrix = MmMatrix.fromMeasurementModel(measurementModel);
 
-  const interactions = measurementModel.filter(
-    (e): e is InteractionSpec => e.kind === "interaction",
-  );
+  const interactions = interactionSpecs(measurementModel);
   const processed = processInteractions(
     interactions,
     estimationData,
@@ -190,6 +189,7 @@ export function estimatePls(
   });
 
   const model: PlsModel = {
+    kind: "pls",
     ...core,
     data: estimationData,
     rawdata: missingValue === undefined ? data : rawdata,
@@ -201,14 +201,14 @@ export function estimatePls(
   };
 
   const consistent = modelConsistent(model);
+  if (!firstStageModel) return consistent;
 
-  if (firstStageModel) {
-    consistent.firstStageModel = firstStageModel;
-    consistent.hoc = true;
-    const combined = combineFirstOrderSecondOrderMatrices(firstStageModel, consistent, mmMatrix);
-    consistent.outerLoadings = combined.outerLoadings;
-    consistent.outerWeights = combined.outerWeights;
-  }
-
-  return consistent;
+  const combined = combineFirstOrderSecondOrderMatrices(firstStageModel, consistent, mmMatrix);
+  return {
+    ...consistent,
+    firstStageModel,
+    hoc: true,
+    outerLoadings: combined.outerLoadings,
+    outerWeights: combined.outerWeights,
+  };
 }

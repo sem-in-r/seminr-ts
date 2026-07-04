@@ -10,7 +10,7 @@ import { matmul, namedMatrix, nmGet, type NamedMatrix } from "../math/matrix.ts"
 import { mean, sd, quantile } from "../math/stats.ts";
 import type { Dataset } from "../estimate/data.ts";
 import type { MeasurementModel } from "../specify/constructs.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
+import type { SmMatrixInput } from "../model/smMatrix.ts";
 import type { InnerWeightsFn } from "../estimate/schemes.ts";
 import { defaultResampler, type Resampler } from "./rng.ts";
 
@@ -24,20 +24,21 @@ export interface BootstrapOptions {
   indices?: number[][];
 }
 
-export interface BootModel extends PlsModel {
-  bootPaths: NamedMatrix[];
-  bootLoadings: NamedMatrix[];
-  bootWeights: NamedMatrix[];
-  bootTotalPaths: NamedMatrix[];
-  pathsDescriptives: NamedMatrix;
-  loadingsDescriptives: NamedMatrix;
-  weightsDescriptives: NamedMatrix;
-  totalPathsDescriptives: NamedMatrix;
+export interface BootModel extends Omit<PlsModel, "kind"> {
+  readonly kind: "boot";
+  readonly bootPaths: NamedMatrix[];
+  readonly bootLoadings: NamedMatrix[];
+  readonly bootWeights: NamedMatrix[];
+  readonly bootTotalPaths: NamedMatrix[];
+  readonly pathsDescriptives: NamedMatrix;
+  readonly loadingsDescriptives: NamedMatrix;
+  readonly weightsDescriptives: NamedMatrix;
+  readonly totalPathsDescriptives: NamedMatrix;
   /** Successful replications. */
-  boots: number;
+  readonly boots: number;
   /** Replications that failed to estimate and were dropped. */
-  fails: number;
-  seed: number | undefined;
+  readonly fails: number;
+  readonly seed: number | undefined;
 }
 
 /** Total effects: B + B² + … until the power is all zeros (acyclic models terminate exactly). */
@@ -78,7 +79,7 @@ export function bootReplication(
   rawdata: Dataset,
   indices: readonly number[],
   measurementModel: MeasurementModel,
-  structuralModel: SMMatrix,
+  structuralModel: SmMatrixInput,
   options: BootReplicationOptions,
 ): BootReplication | null {
   try {
@@ -186,6 +187,7 @@ export function summarizeBootstrap(
   const bootTotalPaths = kept.map((r) => r.totalPaths);
   return {
     ...model,
+    kind: "boot",
     bootPaths,
     bootLoadings,
     bootWeights,

@@ -16,7 +16,8 @@ import {
 } from "../../src/specify/constructs.ts";
 import { associations, itemErrors } from "../../src/specify/associations.ts";
 import { relationships, paths } from "../../src/specify/relationships.ts";
-import { buildMmMatrix } from "../../src/model/mmMatrix.ts";
+import { SmMatrix } from "../../src/model/smMatrix.ts";
+import { MmMatrix } from "../../src/model/mmMatrix.ts";
 import { selectColumns } from "../../src/estimate/data.ts";
 import { loadFixture, loadMobi } from "../helpers/fixtures.ts";
 import type { CbsemFixture } from "./helpers.ts";
@@ -30,7 +31,7 @@ const c3cfaMm = constructs(
 );
 const c3cfaAm = associations(itemErrors(["PERQ1", "PERQ2"], "CUEX3"), itemErrors("IMAG1", "CUEX2"));
 const c3cfaFx = await loadFixture<CbsemFixture>("cbsem-C3_cfa_doc");
-const c3cfaPt = buildParTable({ mmMatrix: buildMmMatrix(c3cfaMm), itemAssociations: c3cfaAm });
+const c3cfaPt = buildParTable({ mmMatrix: MmMatrix.fromMeasurementModel(c3cfaMm), itemAssociations: c3cfaAm });
 const c3cfaData = selectColumns(mobi, c3cfaPt.observed);
 const c3cfaS = sampleCovariance(c3cfaData);
 const c3cfaFit = fitMl(c3cfaPt, c3cfaS);
@@ -44,13 +45,13 @@ const c3Mm = constructs(
   reflective("Loyalty", multiItems("CUSL", [1, 2, 3])),
 );
 const c3Am = associations(itemErrors(["PERQ1", "PERQ2"], "IMAG1"));
-const c3Sm = relationships(
+const c3Sm = SmMatrix.fromRows(relationships(
   paths({ from: ["Image", "Quality"], to: ["Value", "Satisfaction"] }),
   paths({ from: ["Value", "Satisfaction"], to: ["Complaints", "Loyalty"] }),
   paths({ from: "Complaints", to: "Loyalty" }),
-);
+));
 const c3Fx = await loadFixture<CbsemFixture>("cbsem-C3_ecsi");
-const c3Pt = buildParTable({ mmMatrix: buildMmMatrix(c3Mm), structuralModel: c3Sm, itemAssociations: c3Am });
+const c3Pt = buildParTable({ mmMatrix: MmMatrix.fromMeasurementModel(c3Mm), structuralModel: c3Sm, itemAssociations: c3Am });
 const c3S = sampleCovariance(selectColumns(mobi, c3Pt.observed));
 const c3Fit = fitMl(c3Pt, c3S);
 

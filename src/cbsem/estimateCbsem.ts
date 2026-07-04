@@ -6,8 +6,8 @@
 
 import type { MeasurementModel } from "../specify/constructs.ts";
 import type { ItemAssociations } from "../specify/associations.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
-import type { MMMatrix } from "../model/mmMatrix.ts";
+import type { MmMatrix } from "../model/mmMatrix.ts";
+import { SmMatrix, type SmMatrixInput } from "../model/smMatrix.ts";
 import type { Dataset, ColumnMatrix } from "../estimate/data.ts";
 import { selectColumns } from "../estimate/data.ts";
 import { namedMatrix, type NamedMatrix } from "../math/matrix.ts";
@@ -26,32 +26,32 @@ import {
   type CbsemEstimation,
   type EstimateCbBaseOptions,
 } from "./estimateCfa.ts";
-import { constructNames } from "../model/smMatrix.ts";
 
 export interface CbsemModel {
+  readonly kind: "cbsem";
   /** Interaction-augmented estimation data with lavaan-safe column names. */
-  data: Dataset;
-  rawdata: Dataset;
-  measurementModel: MeasurementModel;
+  readonly data: Dataset;
+  readonly rawdata: Dataset;
+  readonly measurementModel: MeasurementModel;
   /** mmMatrix incl. generated interaction rows (original `*` names). */
-  mmMatrix: MMMatrix;
-  smMatrix: SMMatrix;
-  associations?: ItemAssociations;
-  constructs: string[];
-  factorLoadings: NamedMatrix;
-  constructScores: ColumnMatrix;
-  itemWeights: NamedMatrix;
+  readonly mmMatrix: MmMatrix;
+  readonly smMatrix: SmMatrix;
+  readonly associations?: ItemAssociations;
+  readonly constructs: string[];
+  readonly factorLoadings: NamedMatrix;
+  readonly constructScores: ColumnMatrix;
+  readonly itemWeights: NamedMatrix;
   /** Standardized path coefficients, antecedents x outcomes (NaN = no path). */
-  pathCoef: NamedMatrix;
-  lavaanModel: string;
-  estimation: CbsemEstimation;
+  readonly pathCoef: NamedMatrix;
+  readonly lavaanModel: string;
+  readonly estimation: CbsemEstimation;
 }
 
 /** Named-argument form of {@link estimateCbsem}, mirroring R's argument names. */
 export interface EstimateCbsemArgs extends EstimateCbBaseOptions {
   data: Dataset;
   measurementModel: MeasurementModel;
-  structuralModel: SMMatrix;
+  structuralModel: SmMatrixInput;
   itemAssociations?: ItemAssociations;
 }
 
@@ -59,14 +59,14 @@ export function estimateCbsem(args: EstimateCbsemArgs): CbsemModel;
 export function estimateCbsem(
   data: Dataset,
   measurementModel: MeasurementModel,
-  structuralModel: SMMatrix,
+  structuralModel: SmMatrixInput,
   itemAssociations?: ItemAssociations,
   options?: EstimateCbBaseOptions,
 ): CbsemModel;
 export function estimateCbsem(
   dataOrArgs: Dataset | EstimateCbsemArgs,
   maybeMm?: MeasurementModel,
-  maybeSm?: SMMatrix,
+  maybeSm?: SmMatrixInput,
   maybeAssociations?: ItemAssociations,
   maybeOptions: EstimateCbBaseOptions = {},
 ): CbsemModel {
@@ -86,11 +86,12 @@ export function estimateCbsem(
 function estimateCbsemImpl(
   data: Dataset,
   measurementModel: MeasurementModel,
-  structuralModel: SMMatrix,
+  structuralModelInput: SmMatrixInput,
   itemAssociations?: ItemAssociations,
   options: EstimateCbBaseOptions = {},
 ): CbsemModel {
   const rawdata = data;
+  const structuralModel = SmMatrix.from(structuralModelInput);
 
   // Interactions: augment data, coerce generated rows reflective.
   const processed = processCbsemInteractions(measurementModel, data, structuralModel);
@@ -100,15 +101,8 @@ function estimateCbsemImpl(
     columns: processed.data.columns.map(lavaanifyName),
     values: processed.data.values,
   };
-  const lavMm: MMMatrix = processed.mmMatrix.map((row) => ({
-    construct: lavaanifyName(row.construct),
-    measurement: lavaanifyName(row.measurement),
-    type: row.type,
-  }));
-  const lavSm: SMMatrix = structuralModel.map((row) => ({
-    source: lavaanifyName(row.source),
-    target: lavaanifyName(row.target),
-  }));
+  const lavMm = processed.mmMatrix.mapNames(lavaanifyName);
+  const lavSm = structuralModel.mapNames(lavaanifyName);
 
   const lavaanModel = lavaanModelSyntax({
     mmMatrix: lavMm,
@@ -128,7 +122,7 @@ function estimateCbsemImpl(
 
   const hocs = hocNamesOf(measurementModel)
     .map(lavaanifyName)
-    .filter((name) => constructNames(lavSm).includes(name));
+    .filter((name) => lavSm.constructNames().includes(name));
   const factorLoadings =
     hocs.length > 0
       ? combineHocLoadings(parTable, std, hocs)
@@ -138,6 +132,7 @@ function estimateCbsemImpl(
   const pathCoef = pathCoefMatrix(parTable, std, lavSm);
 
   return {
+    kind: "cbsem",
     data: lavData,
     rawdata,
     measurementModel,

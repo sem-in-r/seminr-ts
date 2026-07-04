@@ -7,19 +7,13 @@
 import { standardize, colCov, colCor } from "../math/stats.ts";
 import { namedMatrix, nmGet, nmSet, type NamedMatrix } from "../math/matrix.ts";
 import { solve } from "../math/solve.ts";
-import {
-  allConstructsOfMode,
-  constructItems,
-  isModeB,
-  isSingleItem,
-} from "../model/mmMatrix.ts";
-import { allEndogenous, constructAntecedents, isInteraction } from "../model/smMatrix.ts";
+import { isInteraction } from "../model/smMatrix.ts";
 import { selectColumns } from "./data.ts";
 import { metricsInsample } from "./simplePls.ts";
 import type { PlsModel } from "./estimatePls.ts";
 
 function constructWeightVector(model: PlsModel, construct: string): number[] {
-  return constructItems(model.mmMatrix, construct).map((item) =>
+  return model.mmMatrix.constructItems(construct).map((item) =>
     nmGet(model.outerWeights, item, construct),
   );
 }
@@ -29,15 +23,15 @@ export function rhoA(model: PlsModel, constructs: readonly string[]): NamedMatri
   const rho = namedMatrix(constructs, ["rhoA"]);
   for (const construct of constructs) {
     if (
-      isModeB(model.mmMatrix, construct) ||
-      isSingleItem(model.mmMatrix, construct) ||
+      model.mmMatrix.isModeB(construct) ||
+      model.mmMatrix.isSingleItem(construct) ||
       isInteraction(construct)
     ) {
       nmSet(rho, construct, "rhoA", 1);
       continue;
     }
 
-    const items = constructItems(model.mmMatrix, construct);
+    const items = model.mmMatrix.constructItems(construct);
     const w = constructWeightVector(model, construct);
     const indicators = standardize(selectColumns(model.data, items).values, items).values;
     const s = colCov(indicators, indicators);
@@ -59,7 +53,7 @@ export function rhoA(model: PlsModel, constructs: readonly string[]): NamedMatri
   return rho;
 }
 
-/** Apply the PLSc adjustment, as seminr's `PLSc()`. Mutates and returns the model. */
+/** Apply the PLSc adjustment, as seminr's `PLSc()`. Returns an adjusted copy of the model. */
 export function plsc(model: PlsModel): PlsModel {
   const constructs = model.constructs;
   const rho = rhoA(model, constructs);
@@ -74,32 +68,32 @@ export function plsc(model: PlsModel): PlsModel {
     });
   });
 
-  const dependant = allEndogenous(model.smMatrix);
+  const dependant = model.smMatrix.allEndogenous();
   for (const dv of dependant) {
-    const exogenous = constructAntecedents(model.smMatrix, dv);
+    const exogenous = model.smMatrix.constructAntecedents(dv);
     const subCors = exogenous.map((a) => exogenous.map((b) => nmGet(adjCors, a, b)));
     const rhs = exogenous.map((a) => nmGet(adjCors, a, dv));
     const betas = solve(subCors, rhs);
     exogenous.forEach((iv, k) => nmSet(model.pathCoef, iv, dv, betas[k]!));
   }
 
-  model.rSquared = metricsInsample(model.data.values.length, model.smMatrix, dependant, adjCors);
+  const rSquared = metricsInsample(model.data.values.length, model.smMatrix, dependant, adjCors);
 
   const smConstructs = new Set(constructs);
-  const reflectives = allConstructsOfMode(model.mmMatrix, "C").filter((c) => smConstructs.has(c));
+  const reflectives = model.mmMatrix.allConstructsOfMode("C").filter((c) => smConstructs.has(c));
   for (const construct of reflectives) {
-    const items = constructItems(model.mmMatrix, construct);
+    const items = model.mmMatrix.constructItems(construct);
     const w = constructWeightVector(model, construct);
     const wtw = w.reduce((s2, v) => s2 + v * v, 0);
     const factor = Math.sqrt(rhoOf(construct)) / wtw;
     items.forEach((item, k) => nmSet(model.outerLoadings, item, construct, w[k]! * factor));
   }
 
-  return model;
+  return { ...model, rSquared };
 }
 
 /** Apply PLSc when the model contains reflective ("C") constructs, as seminr's `model_consistent()`. */
 export function modelConsistent(model: PlsModel): PlsModel {
-  const hasReflective = allConstructsOfMode(model.mmMatrix, "C").length > 0;
+  const hasReflective = model.mmMatrix.allConstructsOfMode("C").length > 0;
   return hasReflective ? plsc(model) : model;
 }

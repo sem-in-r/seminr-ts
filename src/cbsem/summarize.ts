@@ -5,8 +5,7 @@
  */
 
 import { namedMatrix, type NamedMatrix } from "../math/matrix.ts";
-import { allEndogenous, allExogenous } from "../model/smMatrix.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
+import type { SmMatrix } from "../model/smMatrix.ts";
 import { lavaanifyName } from "./lavaanSyntax.ts";
 import { rhoCAve, antecedentVifs } from "./summary.ts";
 import {
@@ -63,17 +62,16 @@ export function summarizeCfa(model: CfaModel): CfaSummary {
 }
 
 /** R^2 row + standardized path coefficients (lavaanified names, as seminr). */
-function pathsCoefficientsOf(model: CbsemModel, lavSm: SMMatrix): NamedMatrix {
+function pathsCoefficientsOf(model: CbsemModel, lavSm: SmMatrix): NamedMatrix {
   const std = model.estimation.std;
   const latents = model.estimation.parTable.latents;
-  const antecedents = allExogenous(lavSm);
-  const outcomes = allEndogenous(lavSm);
-  const pathSet = new Set(lavSm.map((r) => `${r.source} ${r.target}`));
+  const antecedents = lavSm.allExogenous();
+  const outcomes = lavSm.allEndogenous();
   const values: number[][] = [
     outcomes.map((outcome) => std.r2[outcome] ?? Number.NaN),
     ...antecedents.map((source) =>
       outcomes.map((target) => {
-        if (!pathSet.has(`${source} ${target}`)) return Number.NaN;
+        if (!lavSm.hasPath(source, target)) return Number.NaN;
         return std.beta![latents.indexOf(target)]![latents.indexOf(source)]!;
       }),
     ),
@@ -83,10 +81,7 @@ function pathsCoefficientsOf(model: CbsemModel, lavSm: SMMatrix): NamedMatrix {
 
 export function summarizeCbsem(model: CbsemModel): CbsemSummary {
   const { parTable, fit, std, n } = model.estimation;
-  const lavSm: SMMatrix = model.smMatrix.map((row) => ({
-    source: lavaanifyName(row.source),
-    target: lavaanifyName(row.target),
-  }));
+  const lavSm = model.smMatrix.mapNames(lavaanifyName);
   const solution = standardizedSolutionTable(parTable, fit, n);
   return {
     fit: model.estimation.fitMeasures,
@@ -106,4 +101,14 @@ export function summarizeCbsem(model: CbsemModel): CbsemSummary {
       std.corLv,
     ),
   };
+}
+
+/**
+ * Polymorphic summary dispatch by model kind, the TS analog of seminr's S3
+ * `summary()` generics (report_cbsem.R / report_cfa.R).
+ */
+export function summarize(model: CfaModel): CfaSummary;
+export function summarize(model: CbsemModel): CbsemSummary;
+export function summarize(model: CfaModel | CbsemModel): CfaSummary | CbsemSummary {
+  return model.kind === "cbsem" ? summarizeCbsem(model) : summarizeCfa(model);
 }

@@ -99,7 +99,7 @@ export async function bootstrapModelParallel(
   const base = {
     data: model.rawdata,
     measurementModel: serializeMeasurementModel(model.measurementModel),
-    structuralModel: model.structuralModel,
+    structuralModel: model.structuralModel.toRows(),
     settings: model.settings,
     innerWeights: innerWeightsName(model.innerWeights),
   };

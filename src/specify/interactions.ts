@@ -6,10 +6,8 @@
  */
 
 import { composite, modeA, type WeightMarker } from "./constructs.ts";
-import type { SMMatrix } from "./relationships.ts";
-import type { MMMatrix, MMRow } from "../model/mmMatrix.ts";
-import { constructItems } from "../model/mmMatrix.ts";
-import { allInteractions, removePathsFrom, constructNames } from "../model/smMatrix.ts";
+import type { MmMatrix, MMRow } from "../model/mmMatrix.ts";
+import type { SmMatrix } from "../model/smMatrix.ts";
 import { standardize } from "../math/stats.ts";
 import { ols } from "../math/solve.ts";
 import { getColumn, selectColumns, type ColumnMatrix, type Dataset } from "../estimate/data.ts";
@@ -20,8 +18,8 @@ export interface InteractionContext {
   /** Cleaned estimation data (measured items only). */
   data: Dataset;
   /** mmMatrix of the non-interaction constructs. */
-  mmMatrix: MMMatrix;
-  structuralModel: SMMatrix;
+  mmMatrix: MmMatrix;
+  structuralModel: SmMatrix;
   innerWeights: InnerWeightsFn;
 }
 
@@ -76,8 +74,8 @@ interface ProductItems {
 
 /** Pairwise products of the z-scored iv and moderator items ("ivItem*modItem", iv varying slowest). */
 function scaledProductItems(ctx: InteractionContext, iv: string, moderator: string): ProductItems {
-  const ivItems = constructItems(ctx.mmMatrix, iv);
-  const moderatorItems = constructItems(ctx.mmMatrix, moderator);
+  const ivItems = ctx.mmMatrix.constructItems(iv);
+  const moderatorItems = ctx.mmMatrix.constructItems(moderator);
   const ivScaled = standardize(selectColumns(ctx.data, ivItems).values, ivItems).values;
   const modScaled = standardize(selectColumns(ctx.data, moderatorItems).values, moderatorItems).values;
 
@@ -156,7 +154,7 @@ export const orthogonal: InteractionMethod = (iv, moderator, weights = modeA) =>
  */
 export const twoStage: InteractionMethod = (iv, moderator, weights = modeA) => (ctx) => {
   const name = `${iv}*${moderator}`;
-  const mainEffectsSm = removePathsFrom(ctx.structuralModel, allInteractions(ctx.structuralModel));
+  const mainEffectsSm = ctx.structuralModel.removePathsFrom(ctx.structuralModel.allInteractions());
   const firstStage = simplePls(ctx.data, mainEffectsSm, ctx.mmMatrix, {
     innerWeights: ctx.innerWeights,
   });
@@ -273,7 +271,7 @@ export interface InteractionParams {
 
 export interface ProcessedInteractions {
   data: Dataset;
-  mmMatrix: MMMatrix;
+  mmMatrix: MmMatrix;
   interactionParams: Record<string, InteractionParams>;
 }
 
@@ -284,8 +282,8 @@ export interface ProcessedInteractions {
 export function processInteractions(
   interactions: readonly InteractionSpec[],
   data: Dataset,
-  mmMatrix: MMMatrix,
-  structuralModel: SMMatrix,
+  mmMatrix: MmMatrix,
+  structuralModel: SmMatrix,
   innerWeights: InnerWeightsFn = pathWeighting,
 ): ProcessedInteractions {
   if (interactions.length === 0) return { data, mmMatrix, interactionParams: {} };
@@ -293,14 +291,14 @@ export function processInteractions(
   const ctx: InteractionContext = { data, mmMatrix, structuralModel, innerWeights };
   const columns = [...data.columns];
   const values = data.values.map((row) => [...row]);
-  const mm = [...mmMatrix];
+  let mm = mmMatrix;
   const interactionParams: Record<string, InteractionParams> = {};
 
   for (const spec of interactions) {
     const result = spec.build(ctx);
     columns.push(...result.data.columns);
     result.data.values.forEach((row, r) => values[r]!.push(...row));
-    mm.push(...result.mm);
+    mm = mm.appendRows(result.mm);
     interactionParams[result.name] = {
       ivName: result.ivName,
       moderatorName: result.moderatorName,

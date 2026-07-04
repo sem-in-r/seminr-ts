@@ -11,7 +11,11 @@ import {
   unitWeights,
   modeA,
   modeB,
+  constructSpecs,
+  interactionSpecs,
+  nonInteractionSpecs,
 } from "../../src/specify/constructs.ts";
+import { interactionTerm } from "../../src/specify/interactions.ts";
 
 describe("multiItems", () => {
   it("generates numbered item names", () => {
@@ -132,5 +136,31 @@ describe("constructs", () => {
     expect(mm.length).toBe(2);
     expect(mm[0]!.name).toBe("Image");
     expect(mm[1]).toMatchObject({ type: "C" });
+  });
+});
+
+describe("measurement-model spec accessors", () => {
+  const mm = constructs(
+    composite("Image", multiItems("IMAG", [1, 2])),
+    reflective("Expectation", multiItems("CUEX", [1, 2])),
+    interactionTerm("Image", "Expectation"),
+  );
+
+  it("constructSpecs returns only construct entries, narrowed", () => {
+    const specs = constructSpecs(mm);
+    expect(specs.map((s) => s.name)).toEqual(["Image", "Expectation"]);
+    expect(specs.every((s) => s.kind === "construct")).toBe(true);
+    expect(specs[0]!.items).toEqual(["IMAG1", "IMAG2"]);
+  });
+
+  it("interactionSpecs returns only interaction entries, narrowed", () => {
+    const specs = interactionSpecs(mm);
+    expect(specs.map((s) => s.name)).toEqual(["Image*Expectation"]);
+    expect(specs[0]!.iv).toBe("Image");
+    expect(specs[0]!.moderator).toBe("Expectation");
+  });
+
+  it("nonInteractionSpecs drops interaction entries, as seminr's all_non_interactions", () => {
+    expect(nonInteractionSpecs(mm).map((s) => s.name)).toEqual(["Image", "Expectation"]);
   });
 });

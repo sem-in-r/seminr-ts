@@ -3,18 +3,8 @@
 import { standardize, colCov, colCor, sd } from "../math/stats.ts";
 import { matmul, namedMatrix, nmSet, type NamedMatrix, type Matrix } from "../math/matrix.ts";
 import { inverse, ols } from "../math/solve.ts";
-import {
-  allConstructs,
-  constructItems,
-  type MMMatrix,
-} from "../model/mmMatrix.ts";
-import {
-  allEndogenous,
-  constructAntecedents,
-  constructNames,
-  isInteraction,
-} from "../model/smMatrix.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
+import type { MmMatrix } from "../model/mmMatrix.ts";
+import { isInteraction, type SmMatrix } from "../model/smMatrix.ts";
 import { getColumn, selectColumns, type ColumnMatrix, type Dataset } from "./data.ts";
 import { constructModeFn, pathWeighting, type InnerWeightsFn, type OuterModeFn } from "./schemes.ts";
 import { DEFAULT_MAX_IT, DEFAULT_STOP_CRITERION } from "./constants.ts";
@@ -28,40 +18,40 @@ export interface SimplePlsOptions {
 }
 
 export interface SimplePlsModel {
-  meanData: Record<string, number>;
-  sdData: Record<string, number>;
-  smMatrix: SMMatrix;
-  mmMatrix: MMMatrix;
-  constructs: string[];
-  mmVariables: string[];
-  outerLoadings: NamedMatrix;
-  outerWeights: NamedMatrix;
-  pathCoef: NamedMatrix;
-  iterations: number;
-  weightDiff: number;
-  constructScores: NamedMatrix;
-  rSquared: NamedMatrix;
-  innerWeights: InnerWeightsFn;
+  readonly meanData: Record<string, number>;
+  readonly sdData: Record<string, number>;
+  readonly smMatrix: SmMatrix;
+  readonly mmMatrix: MmMatrix;
+  readonly constructs: string[];
+  readonly mmVariables: string[];
+  readonly outerLoadings: NamedMatrix;
+  readonly outerWeights: NamedMatrix;
+  readonly pathCoef: NamedMatrix;
+  readonly iterations: number;
+  readonly weightDiff: number;
+  readonly constructScores: NamedMatrix;
+  readonly rSquared: NamedMatrix;
+  readonly innerWeights: InnerWeightsFn;
 }
 
 /** Items-by-constructs 0/1 membership matrix. */
 export function initialOuterWeights(
-  mmMatrix: MMMatrix,
+  mmMatrix: MmMatrix,
   mmVariables: readonly string[],
   constructs: readonly string[],
 ): NamedMatrix {
   const w = namedMatrix(mmVariables, constructs);
   for (const construct of constructs) {
-    for (const item of constructItems(mmMatrix, construct)) nmSet(w, item, construct, 1);
+    for (const item of mmMatrix.constructItems(construct)) nmSet(w, item, construct, 1);
   }
   return w;
 }
 
 /** Constructs-by-constructs 0/1 matrix with 1 at [source, target]. */
-export function initialPathsMatrix(smMatrix: SMMatrix, constructs: readonly string[]): NamedMatrix {
+export function initialPathsMatrix(smMatrix: SmMatrix, constructs: readonly string[]): NamedMatrix {
   const p = namedMatrix(constructs, constructs);
   for (const target of constructs) {
-    for (const source of constructAntecedents(smMatrix, target)) nmSet(p, source, target, 1);
+    for (const source of smMatrix.constructAntecedents(target)) nmSet(p, source, target, 1);
   }
   return p;
 }
@@ -96,7 +86,7 @@ function calculateLoadings(weightsMask: NamedMatrix, scoreValues: Matrix, normVa
  */
 export function adjustInteraction(
   constructs: readonly string[],
-  mmMatrix: MMMatrix,
+  mmMatrix: MmMatrix,
   outerLoadings: NamedMatrix,
   scores: ColumnMatrix,
   obsData: Dataset,
@@ -105,7 +95,7 @@ export function adjustInteraction(
     if (!isInteraction(construct)) continue;
     let adjustment = 0;
     let denom = 0;
-    for (const item of constructItems(mmMatrix, construct)) {
+    for (const item of mmMatrix.constructItems(construct)) {
       const loading = Math.abs(
         outerLoadings.values[outerLoadings.rows.indexOf(item)]![outerLoadings.cols.indexOf(construct)]!,
       );
@@ -120,14 +110,14 @@ export function adjustInteraction(
 
 /** OLS betas for each endogenous construct written into a copy of the paths matrix. */
 export function estimatePathCoef(
-  smMatrix: SMMatrix,
+  smMatrix: SmMatrix,
   scores: ColumnMatrix,
   dependant: readonly string[],
   pathsMatrix: NamedMatrix,
 ): NamedMatrix {
   const coef = namedMatrix(pathsMatrix.rows, pathsMatrix.cols, pathsMatrix.values.map((r) => [...r]));
   for (const dv of dependant) {
-    const antecedents = constructAntecedents(smMatrix, dv);
+    const antecedents = smMatrix.constructAntecedents(dv);
     const betas = ols(selectColumns(scores, antecedents).values, getColumn(scores, dv));
     antecedents.forEach((iv, k) => nmSet(coef, iv, dv, betas[k]!));
   }
@@ -137,13 +127,13 @@ export function estimatePathCoef(
 /** R² and adjusted R² per endogenous construct (evaluate_model.R:4-19). */
 export function metricsInsample(
   nObs: number,
-  smMatrix: SMMatrix,
+  smMatrix: SmMatrix,
   dependant: readonly string[],
   scoreCors: NamedMatrix,
 ): NamedMatrix {
   const out = namedMatrix(["Rsq", "AdjRsq"], dependant);
   for (const dv of dependant) {
-    const involved = [...constructAntecedents(smMatrix, dv), dv];
+    const involved = [...smMatrix.constructAntecedents(dv), dv];
     const idx = involved.map((c) => scoreCors.rows.indexOf(c));
     const sub = idx.map((i) => idx.map((j) => scoreCors.values[i]![j]!));
     const inv = inverse(sub);
@@ -157,8 +147,8 @@ export function metricsInsample(
 
 export function simplePls(
   obsData: Dataset,
-  smMatrix: SMMatrix,
-  mmMatrix: MMMatrix,
+  smMatrix: SmMatrix,
+  mmMatrix: MmMatrix,
   options: SimplePlsOptions = {},
 ): SimplePlsModel {
   const {
@@ -167,10 +157,10 @@ export function simplePls(
     stopCriterion = DEFAULT_STOP_CRITERION,
   } = options;
 
-  const constructs = constructNames(smMatrix);
+  const constructs = smMatrix.constructNames();
   const constructSet = new Set(constructs);
-  const mmOrderedConstructs = allConstructs(mmMatrix).filter((c) => constructSet.has(c));
-  const mmVariables = mmOrderedConstructs.flatMap((c) => constructItems(mmMatrix, c));
+  const mmOrderedConstructs = mmMatrix.allConstructs().filter((c) => constructSet.has(c));
+  const mmVariables = mmOrderedConstructs.flatMap((c) => mmMatrix.constructItems(c));
 
   const modeScheme: Record<string, OuterModeFn> = options.measurementModeScheme ?? {};
   for (const c of constructs) modeScheme[c] ??= constructModeFn(mmMatrix, c);
@@ -185,7 +175,7 @@ export function simplePls(
     sdData[v] = standardized.sds[j]!;
   });
 
-  const dependant = allEndogenous(smMatrix);
+  const dependant = smMatrix.allEndogenous();
   const outerWeights = initialOuterWeights(mmMatrix, mmVariables, constructs);
   const weightsMask = namedMatrix(mmVariables, constructs, outerWeights.values.map((r) => [...r]));
   const pathsMatrix = initialPathsMatrix(smMatrix, constructs);
@@ -210,7 +200,7 @@ export function simplePls(
     for (const construct of constructs) {
       const newWeights = modeScheme[construct]!(mmMatrix, construct, normData, scores);
       const j = constructIndexOf.get(construct)!;
-      constructItems(mmMatrix, construct).forEach((item, k) => {
+      mmMatrix.constructItems(construct).forEach((item, k) => {
         outerWeights.values[itemIndexOf.get(item)!]![j] = newWeights[k]!;
       });
     }

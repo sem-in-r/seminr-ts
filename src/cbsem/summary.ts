@@ -6,8 +6,7 @@
 
 import { namedMatrix, nmGet, type NamedMatrix } from "../math/matrix.ts";
 import { inverse } from "../math/solve.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
-import { allEndogenous, constructAntecedents } from "../model/smMatrix.ts";
+import type { SmMatrix } from "../model/smMatrix.ts";
 
 /**
  * rhoC = (Σλ)² / ((Σλ)² + Σ(1−λ²)), AVE = Σλ²/n over each construct's
@@ -35,12 +34,12 @@ export function rhoCAve(factorLoadings: NamedMatrix, constructs: readonly string
  * matrix. Single-antecedent outcomes get NaN (seminr's NA).
  */
 export function antecedentVifs(
-  sm: SMMatrix,
+  sm: SmMatrix,
   corLv: NamedMatrix,
 ): Record<string, Record<string, number>> {
   const out: Record<string, Record<string, number>> = {};
-  for (const outcome of allEndogenous(sm)) {
-    const antecedents = constructAntecedents(sm, outcome);
+  for (const outcome of sm.allEndogenous()) {
+    const antecedents = sm.constructAntecedents(outcome);
     const byAntecedent: Record<string, number> = {};
     if (antecedents.length === 1) {
       byAntecedent[antecedents[0]!] = Number.NaN;

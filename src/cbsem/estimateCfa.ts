@@ -4,10 +4,9 @@
  * estimator (lavaan-equivalent under std.lv=TRUE) fits it.
  */
 
-import type { MeasurementModel, ConstructSpec } from "../specify/constructs.ts";
+import { constructSpecs, type MeasurementModel } from "../specify/constructs.ts";
 import type { ItemAssociations } from "../specify/associations.ts";
-import type { MMMatrix } from "../model/mmMatrix.ts";
-import { buildMmMatrix } from "../model/mmMatrix.ts";
+import { MmMatrix } from "../model/mmMatrix.ts";
 import type { Dataset, ColumnMatrix } from "../estimate/data.ts";
 import { selectColumns } from "../estimate/data.ts";
 import { namedMatrix, type Matrix, type NamedMatrix } from "../math/matrix.ts";
@@ -22,28 +21,29 @@ import { combineHocLoadings } from "./hoc.ts";
 
 /** Internal estimation details (replaces seminr's opaque lavaan_output). */
 export interface CbsemEstimation {
-  parTable: CbsemParTable;
-  sampleCov: Matrix;
-  fit: MlFitResult;
-  std: StandardizedSolution;
-  n: number;
-  fitMeasures: Record<string, number>;
+  readonly parTable: CbsemParTable;
+  readonly sampleCov: Matrix;
+  readonly fit: MlFitResult;
+  readonly std: StandardizedSolution;
+  readonly n: number;
+  readonly fitMeasures: Record<string, number>;
 }
 
 export interface CfaModel {
+  readonly kind: "cfa";
   /** Estimation data (observed model variables). */
-  data: Dataset;
-  measurementModel: MeasurementModel;
-  mmMatrix: MMMatrix;
-  constructs: string[];
+  readonly data: Dataset;
+  readonly measurementModel: MeasurementModel;
+  readonly mmMatrix: MmMatrix;
+  readonly constructs: string[];
   /** Standardized loadings; for HOC models, merged with second-order rows. */
-  factorLoadings: NamedMatrix;
+  readonly factorLoadings: NamedMatrix;
   /** Ten Berge factor scores. */
-  constructScores: ColumnMatrix;
+  readonly constructScores: ColumnMatrix;
   /** Ten Berge score weights. */
-  itemWeights: NamedMatrix;
-  lavaanModel: string;
-  estimation: CbsemEstimation;
+  readonly itemWeights: NamedMatrix;
+  readonly lavaanModel: string;
+  readonly estimation: CbsemEstimation;
 }
 
 /**
@@ -52,12 +52,12 @@ export interface CfaModel {
  * seminr's cbsem `constructs` field carries only declared constructs.
  */
 export function constructNamesOf(mm: MeasurementModel): string[] {
-  return mm.filter((entry) => entry.kind === "construct").map((entry) => entry.name);
+  return constructSpecs(mm).map((entry) => entry.name);
 }
 
 export function hocNamesOf(mm: MeasurementModel): string[] {
-  return mm
-    .filter((e): e is ConstructSpec => e.kind === "construct" && e.higherOrder === true)
+  return constructSpecs(mm)
+    .filter((e) => e.higherOrder === true)
     .map((e) => e.name);
 }
 
@@ -96,7 +96,7 @@ function estimateCfaImpl(
   itemAssociations?: ItemAssociations,
   options: EstimateCbBaseOptions = {},
 ): CfaModel {
-  const mmMatrix = buildMmMatrix(measurementModel);
+  const mmMatrix = MmMatrix.fromMeasurementModel(measurementModel);
   const lavaanModel = lavaanModelSyntax({ mmMatrix, itemAssociations });
   const parTable = buildParTable({ mmMatrix, itemAssociations });
   const estData = selectColumns(data, parTable.observed);
@@ -114,6 +114,7 @@ function estimateCfaImpl(
   const tenBerge = tenBergeScores(parTable, fit.matrices, std, estData);
 
   return {
+    kind: "cfa",
     data: estData,
     measurementModel,
     mmMatrix,

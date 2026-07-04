@@ -4,8 +4,9 @@
  * (scripts kept in the plan history; digits = 16).
  */
 import { constructs, composite, regressionWeights } from "../../src/specify/constructs.ts";
-import { buildMmMatrix } from "../../src/model/mmMatrix.ts";
+import { MmMatrix } from "../../src/model/mmMatrix.ts";
 import { paths, relationships } from "../../src/specify/relationships.ts";
+import { SmMatrix } from "../../src/model/smMatrix.ts";
 import type { Dataset } from "../../src/estimate/data.ts";
 
 export const tinyData: Dataset = {
@@ -26,6 +27,6 @@ export const tinyMm = constructs(
   composite("Y", ["y1", "y2"]),
 );
 
-export const tinyMmMatrix = buildMmMatrix(tinyMm);
+export const tinyMmMatrix = MmMatrix.fromMeasurementModel(tinyMm);
 
-export const tinySm = relationships(paths(["X", "M"], "Y"));
+export const tinySm = SmMatrix.fromRows(relationships(paths(["X", "M"], "Y")));

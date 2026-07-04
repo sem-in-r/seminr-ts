@@ -8,7 +8,8 @@ import {
 } from "../../src/specify/constructs.ts";
 import { associations, itemErrors } from "../../src/specify/associations.ts";
 import { relationships, paths } from "../../src/specify/relationships.ts";
-import { buildMmMatrix } from "../../src/model/mmMatrix.ts";
+import { SmMatrix } from "../../src/model/smMatrix.ts";
+import { MmMatrix } from "../../src/model/mmMatrix.ts";
 import { loadFixture } from "../helpers/fixtures.ts";
 import type { CbsemFixture } from "./helpers.ts";
 
@@ -37,11 +38,11 @@ const c3Mm = constructs(
   reflective("Loyalty", multiItems("CUSL", [1, 2, 3])),
 );
 const c3Am = associations(itemErrors(["PERQ1", "PERQ2"], "IMAG1"));
-const c3Sm = relationships(
+const c3Sm = SmMatrix.fromRows(relationships(
   paths({ from: ["Image", "Quality"], to: ["Value", "Satisfaction"] }),
   paths({ from: ["Value", "Satisfaction"], to: ["Complaints", "Loyalty"] }),
   paths({ from: "Complaints", to: "Loyalty" }),
-);
+));
 
 function fixtureTuples(fx: CbsemFixture): [string, string, string, number][] {
   const pt = fx.ml.parTable;
@@ -51,7 +52,7 @@ function fixtureTuples(fx: CbsemFixture): [string, string, string, number][] {
 describe("buildParTable", () => {
   it("matches lavaan's flat table for the C3 doc-example CFA (rows, order, free indices)", async () => {
     const fx = await loadFixture<CbsemFixture>("cbsem-C3_cfa_doc");
-    const pt = buildParTable({ mmMatrix: buildMmMatrix(c3cfaMm), itemAssociations: c3cfaAm });
+    const pt = buildParTable({ mmMatrix: MmMatrix.fromMeasurementModel(c3cfaMm), itemAssociations: c3cfaAm });
     expect(pt.rows.map((r) => [r.lhs, r.op, r.rhs, r.free])).toEqual(fixtureTuples(fx));
     expect(pt.latents).toEqual(fx.ml.unstd.lambda.cols);
     expect(pt.observed).toEqual(fx.ml.unstd.lambda.rows);
@@ -60,7 +61,7 @@ describe("buildParTable", () => {
 
   it("handles association-only observed variables (C1 demo CFA)", async () => {
     const fx = await loadFixture<CbsemFixture>("cbsem-C1_cfa_demo");
-    const pt = buildParTable({ mmMatrix: buildMmMatrix(c1Mm), itemAssociations: c1Am });
+    const pt = buildParTable({ mmMatrix: MmMatrix.fromMeasurementModel(c1Mm), itemAssociations: c1Am });
     expect(pt.rows.map((r) => [r.lhs, r.op, r.rhs, r.free])).toEqual(fixtureTuples(fx));
     // PERQ1/PERQ2 join as observed variables at the end
     expect(pt.observed).toEqual(fx.ml.unstd.lambda.rows);
@@ -71,7 +72,7 @@ describe("buildParTable", () => {
   it("frees only exogenous latent covariances in a full SEM (C3 ECSI)", async () => {
     const fx = await loadFixture<CbsemFixture>("cbsem-C3_ecsi");
     const pt = buildParTable({
-      mmMatrix: buildMmMatrix(c3Mm),
+      mmMatrix: MmMatrix.fromMeasurementModel(c3Mm),
       structuralModel: c3Sm,
       itemAssociations: c3Am,
     });

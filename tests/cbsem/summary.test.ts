@@ -13,7 +13,8 @@ import {
 } from "../../src/specify/constructs.ts";
 import { associations, itemErrors } from "../../src/specify/associations.ts";
 import { relationships, paths } from "../../src/specify/relationships.ts";
-import { buildMmMatrix } from "../../src/model/mmMatrix.ts";
+import { SmMatrix } from "../../src/model/smMatrix.ts";
+import { MmMatrix } from "../../src/model/mmMatrix.ts";
 import { selectColumns } from "../../src/estimate/data.ts";
 import { loadFixture, loadMobi } from "../helpers/fixtures.ts";
 import { expectTestthatEqual, type CbsemFixture } from "./helpers.ts";
@@ -29,14 +30,14 @@ const c3Mm = constructs(
   reflective("Loyalty", multiItems("CUSL", [1, 2, 3])),
 );
 const c3Am = associations(itemErrors(["PERQ1", "PERQ2"], "IMAG1"));
-const c3Sm = relationships(
+const c3Sm = SmMatrix.fromRows(relationships(
   paths({ from: ["Image", "Quality"], to: ["Value", "Satisfaction"] }),
   paths({ from: ["Value", "Satisfaction"], to: ["Complaints", "Loyalty"] }),
   paths({ from: "Complaints", to: "Loyalty" }),
-);
+));
 
 const fx = await loadFixture<CbsemFixture>("cbsem-C3_ecsi");
-const pt = buildParTable({ mmMatrix: buildMmMatrix(c3Mm), structuralModel: c3Sm, itemAssociations: c3Am });
+const pt = buildParTable({ mmMatrix: MmMatrix.fromMeasurementModel(c3Mm), structuralModel: c3Sm, itemAssociations: c3Am });
 const s = sampleCovariance(selectColumns(mobi, pt.observed));
 const fit = fitMl(pt, s);
 const std = standardizedSolution(pt, fit.matrices);
@@ -76,7 +77,7 @@ describe("antecedentVifs", () => {
   });
 
   it("returns NaN for a single-antecedent outcome (seminr NA)", () => {
-    const sm = relationships(paths({ from: "A", to: "B" }));
+    const sm = SmMatrix.fromRows(relationships(paths({ from: "A", to: "B" })));
     const cor = namedMatrix(["A", "B"], ["A", "B"], [
       [1, 0.5],
       [0.5, 1],

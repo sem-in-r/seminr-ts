@@ -1,13 +1,8 @@
 /** Model specification checks (evaluate_model.R:63-101, evaluate_warnings.R). */
 
-import type { MeasurementModel, ConstructSpec } from "../specify/constructs.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
-import { constructNames, constructAntecedents, isInteraction, allInteractions, constructTargets } from "./smMatrix.ts";
-import { allConstructs, constructItems, isSingleItem, constructMode, type MMMatrix } from "./mmMatrix.ts";
-
-function specConstructs(mm: MeasurementModel): ConstructSpec[] {
-  return mm.filter((e): e is ConstructSpec => e.kind === "construct");
-}
+import { constructSpecs, type MeasurementModel } from "../specify/constructs.ts";
+import { isInteraction, type SmMatrix } from "./smMatrix.ts";
+import type { MmMatrix } from "./mmMatrix.ts";
 
 /**
  * Validate model specification before estimation, as seminr's
@@ -15,12 +10,12 @@ function specConstructs(mm: MeasurementModel): ConstructSpec[] {
  */
 export function assessModelSpecification(
   measurementModel: MeasurementModel,
-  structuralModel: SMMatrix,
+  structuralModel: SmMatrix,
   dataColumns: readonly string[],
 ): void {
-  const specs = specConstructs(measurementModel);
+  const specs = constructSpecs(measurementModel);
   const mmConstructNames = new Set(specs.map((s) => s.name));
-  const smConstructs = constructNames(structuralModel).filter((c) => !isInteraction(c));
+  const smConstructs = structuralModel.constructNames().filter((c) => !isInteraction(c));
 
   if (!smConstructs.every((c) => mmConstructNames.has(c))) {
     throw new Error(
@@ -51,12 +46,12 @@ export function assessModelSpecification(
     );
   }
 
-  for (const interaction of allInteractions(structuralModel)) {
+  for (const interaction of structuralModel.allInteractions()) {
     const star = interaction.indexOf("*");
     const iv = interaction.slice(0, star);
     const moderator = interaction.slice(star + 1);
-    for (const outcome of constructTargets(structuralModel, interaction)) {
-      const antecedents = constructAntecedents(structuralModel, outcome);
+    for (const outcome of structuralModel.constructTargets(interaction)) {
+      const antecedents = structuralModel.constructAntecedents(outcome);
       if (!antecedents.includes(iv) || !antecedents.includes(moderator)) {
         throw new Error(
           "It appears that you have not specified both IV and MV as direct effects in the structural model. Model cannot be estimated.",
@@ -67,9 +62,9 @@ export function assessModelSpecification(
 }
 
 /** Error on single-item mode B constructs, as seminr's `warning_single_item_formative()`. */
-export function validateSingleItemModeB(mmMatrix: MMMatrix): void {
-  for (const construct of allConstructs(mmMatrix)) {
-    if (isSingleItem(mmMatrix, construct) && constructMode(mmMatrix, construct) === "B") {
+export function validateSingleItemModeB(mmMatrix: MmMatrix): void {
+  for (const construct of mmMatrix.allConstructs()) {
+    if (mmMatrix.isSingleItem(construct) && mmMatrix.constructMode(construct) === "B") {
       throw new Error("You cannot define a single item construct as mode B");
     }
   }
@@ -82,12 +77,13 @@ export function validateSingleItemModeB(mmMatrix: MMMatrix): void {
 export function missingDataReport(
   data: readonly (readonly (number | null)[])[],
   columnNames: readonly string[],
-  mmMatrix: MMMatrix,
+  mmMatrix: MmMatrix,
 ): string {
   const itemSet = new Set(
-    allConstructs(mmMatrix)
-      .filter((c) => constructMode(mmMatrix, c) !== "HOCA" && constructMode(mmMatrix, c) !== "HOCB")
-      .flatMap((c) => constructItems(mmMatrix, c))
+    mmMatrix
+      .allConstructs()
+      .filter((c) => mmMatrix.constructMode(c) !== "HOCA" && mmMatrix.constructMode(c) !== "HOCB")
+      .flatMap((c) => mmMatrix.constructItems(c))
       .filter((item) => !item.includes("*")),
   );
   const colIdx = columnNames

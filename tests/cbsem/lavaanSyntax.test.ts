@@ -17,7 +17,8 @@ import {
 import { higherReflective } from "../../src/specify/reflective.ts";
 import { associations, itemErrors } from "../../src/specify/associations.ts";
 import { relationships, paths } from "../../src/specify/relationships.ts";
-import { buildMmMatrix } from "../../src/model/mmMatrix.ts";
+import { SmMatrix } from "../../src/model/smMatrix.ts";
+import { MmMatrix } from "../../src/model/mmMatrix.ts";
 import { loadFixture } from "../helpers/fixtures.ts";
 
 interface SyntaxFixture {
@@ -42,11 +43,11 @@ const c3Mm = constructs(
   reflective("Loyalty", multiItems("CUSL", [1, 2, 3])),
 );
 const c3Am = associations(itemErrors(["PERQ1", "PERQ2"], "IMAG1"));
-const c3Sm = relationships(
+const c3Sm = SmMatrix.fromRows(relationships(
   paths({ from: ["Image", "Quality"], to: ["Value", "Satisfaction"] }),
   paths({ from: ["Value", "Satisfaction"], to: ["Complaints", "Loyalty"] }),
   paths({ from: "Complaints", to: "Loyalty" }),
-);
+));
 
 const c1Fixture = await loadFixture<SyntaxFixture>("cbsem-C1_cfa_demo");
 const c3Fixture = await loadFixture<SyntaxFixture>("cbsem-C3_ecsi");
@@ -63,7 +64,7 @@ describe("lavaanifyName", () => {
 
 describe("lavaanMmSyntax", () => {
   it("errors on non-reflective constructs", () => {
-    const mm = buildMmMatrix(constructs(composite("Image", ["IMAG1", "IMAG2"])));
+    const mm = MmMatrix.fromMeasurementModel(constructs(composite("Image", ["IMAG1", "IMAG2"])));
     expect(() => lavaanMmSyntax(mm)).toThrow(
       "Image must be a reflective construct for a CBSEM model",
     );
@@ -73,7 +74,7 @@ describe("lavaanMmSyntax", () => {
 describe("lavaanModelSyntax parity with seminr", () => {
   it("reproduces the C1 CFA lavaan model byte-for-byte", () => {
     const syntax = lavaanModelSyntax({
-      mmMatrix: buildMmMatrix(c1Mm),
+      mmMatrix: MmMatrix.fromMeasurementModel(c1Mm),
       itemAssociations: c1Am,
     });
     expect(syntax).toBe(c1Fixture.lavaanModel);
@@ -81,7 +82,7 @@ describe("lavaanModelSyntax parity with seminr", () => {
 
   it("reproduces the C3 CBSEM lavaan model byte-for-byte", () => {
     const syntax = lavaanModelSyntax({
-      mmMatrix: buildMmMatrix(c3Mm),
+      mmMatrix: MmMatrix.fromMeasurementModel(c3Mm),
       structuralModel: c3Sm,
       itemAssociations: c3Am,
     });
@@ -96,11 +97,11 @@ describe("lavaanModelSyntax parity with seminr", () => {
       reflective("Expectation", multiItems("CUEX", [1, 2, 3])),
       reflective("Loyalty", multiItems("CUSL", [1, 2, 3])),
     );
-    const c5Sm = relationships(
+    const c5Sm = SmMatrix.fromRows(relationships(
       paths({ from: ["ImageSat", "Satisfaction", "Expectation"], to: "Loyalty" }),
-    );
+    ));
     const syntax = lavaanModelSyntax({
-      mmMatrix: buildMmMatrix(c5Mm),
+      mmMatrix: MmMatrix.fromMeasurementModel(c5Mm),
       structuralModel: c5Sm,
     });
     expect(syntax).toBe(c5Fixture.lavaanModel);
@@ -114,7 +115,7 @@ describe("lavaanModelSyntax parity with seminr", () => {
       reflective("Value", multiItems("PERV", [1, 2])),
       reflective("Satisfaction", multiItems("CUSA", [1, 2, 3])),
     );
-    const syntax = lavaanModelSyntax({ mmMatrix: buildMmMatrix(mm) });
+    const syntax = lavaanModelSyntax({ mmMatrix: MmMatrix.fromMeasurementModel(mm) });
     expect(syntax).toBe(c4FsFixture.lavaanModel);
     expect(syntax.endsWith("\n\n")).toBe(true);
     expect(syntax).toContain("CUEX3 ~~ 0*CUEX3");

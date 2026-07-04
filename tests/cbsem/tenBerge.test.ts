@@ -12,7 +12,8 @@ import {
 } from "../../src/specify/constructs.ts";
 import { associations, itemErrors } from "../../src/specify/associations.ts";
 import { relationships, paths } from "../../src/specify/relationships.ts";
-import { buildMmMatrix } from "../../src/model/mmMatrix.ts";
+import { MmMatrix } from "../../src/model/mmMatrix.ts";
+import { SmMatrix } from "../../src/model/smMatrix.ts";
 import { selectColumns } from "../../src/estimate/data.ts";
 import { loadFixture, loadMobi } from "../helpers/fixtures.ts";
 import { expectTestthatEqual, type CbsemFixture } from "./helpers.ts";
@@ -27,8 +28,8 @@ const runModel = async (
 ) => {
   const fx = await loadFixture<CbsemFixture>(fixtureName);
   const pt = buildParTable({
-    mmMatrix: buildMmMatrix(mm),
-    structuralModel: sm,
+    mmMatrix: MmMatrix.fromMeasurementModel(mm),
+    structuralModel: sm && SmMatrix.fromRows(sm),
     itemAssociations: am,
   });
   const data = selectColumns(mobi, pt.observed);

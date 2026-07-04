@@ -1,21 +1,9 @@
 /** Two-stage higher-order constructs (feature_higher_order.R:7-149). */
 
-import type { ConstructSpec, MeasurementModel } from "../specify/constructs.ts";
+import { constructSpecs, type ConstructSpec, type MeasurementModel } from "../specify/constructs.ts";
 import { paths } from "../specify/relationships.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
-import {
-  allConstructs,
-  buildMmMatrix,
-  constructItems,
-  type MMMatrix,
-} from "../model/mmMatrix.ts";
-import {
-  constructAntecedents,
-  constructNames,
-  constructTargets,
-  removePathsFrom,
-  removePathsTo,
-} from "../model/smMatrix.ts";
+import { MmMatrix } from "../model/mmMatrix.ts";
+import type { SmMatrix } from "../model/smMatrix.ts";
 import { namedMatrix, nmGet, nmSet, type NamedMatrix } from "../math/matrix.ts";
 import type { Dataset } from "./data.ts";
 import type { InnerWeightsFn } from "./schemes.ts";
@@ -25,34 +13,31 @@ import type { SimplePlsModel } from "./simplePls.ts";
 import { estimatePls, type PlsModel } from "./estimatePls.ts";
 
 /** Construct specs that define a higher-order composite. */
-export function hocSpecs(measurementModel: MeasurementModel, structuralModel?: SMMatrix): ConstructSpec[] {
-  const smNames = structuralModel ? new Set(constructNames(structuralModel)) : undefined;
-  return measurementModel.filter(
-    (e): e is ConstructSpec =>
-      e.kind === "construct" && e.method === "two_stage" && (!smNames || smNames.has(e.name)),
+export function hocSpecs(measurementModel: MeasurementModel, structuralModel?: SmMatrix): ConstructSpec[] {
+  const smNames = structuralModel ? new Set(structuralModel.constructNames()) : undefined;
+  return constructSpecs(measurementModel).filter(
+    (e) => e.method === "two_stage" && (!smNames || smNames.has(e.name)),
   );
 }
 
 export interface ExpandedHoc {
-  sm: SMMatrix;
+  sm: SmMatrix;
   dimensions: string[];
 }
 
 /** Replace paths into/out of a HOC with paths into/out of each of its dimensions. */
-export function expandHocToLocs(hoc: ConstructSpec, sm: SMMatrix): ExpandedHoc {
+export function expandHocToLocs(hoc: ConstructSpec, sm: SmMatrix): ExpandedHoc {
   const dimensions = [...hoc.items];
   let rewired = sm;
 
-  const antecedents = constructAntecedents(rewired, hoc.name);
+  const antecedents = rewired.constructAntecedents(hoc.name);
   if (antecedents.length > 0) {
-    rewired = [...rewired, ...paths(antecedents, dimensions)];
-    rewired = removePathsTo(rewired, [hoc.name]);
+    rewired = rewired.appendPaths(paths(antecedents, dimensions)).removePathsTo([hoc.name]);
   }
 
-  const outcomes = constructTargets(rewired, hoc.name);
+  const outcomes = rewired.constructTargets(hoc.name);
   if (outcomes.length > 0) {
-    rewired = [...rewired, ...paths(dimensions, outcomes)];
-    rewired = removePathsFrom(rewired, [hoc.name]);
+    rewired = rewired.appendPaths(paths(dimensions, outcomes)).removePathsFrom([hoc.name]);
   }
 
   return { sm: rewired, dimensions };
@@ -71,18 +56,16 @@ export interface HigherOrderPreparation {
 export function prepareHigherOrderModel(
   data: Dataset,
   measurementModel: MeasurementModel,
-  structuralModel: SMMatrix,
+  structuralModel: SmMatrix,
   innerWeights: InnerWeightsFn,
   maxIt: number,
   stopCriterion: number,
 ): HigherOrderPreparation {
-  const firstStageMm = measurementModel.filter(
-    (e) => e.kind === "construct" && e.method !== "two_stage",
-  );
-  const firstStageMmMatrix: MMMatrix = buildMmMatrix(firstStageMm);
+  const firstStageMm = constructSpecs(measurementModel).filter((e) => e.method !== "two_stage");
+  const firstStageMmMatrix = MmMatrix.fromMeasurementModel(firstStageMm);
 
   let sm = structuralModel;
-  const smNames = new Set(constructNames(structuralModel));
+  const smNames = new Set(structuralModel.constructNames());
   const dimensions: string[] = [];
   for (const hoc of hocSpecs(measurementModel)) {
     if (!smNames.has(hoc.name)) continue;
@@ -92,8 +75,7 @@ export function prepareHigherOrderModel(
   }
 
   // drop paths from constructs absent from the first-stage measurement model (removes interactions)
-  const firstStageConstructs = allConstructs(firstStageMmMatrix);
-  sm = sm.filter((row) => firstStageConstructs.includes(row.source));
+  sm = sm.keepPathsFrom(firstStageMmMatrix.allConstructs());
 
   const firstStageModel = estimatePls(data, firstStageMm, sm, {
     innerWeights,
@@ -122,7 +104,7 @@ export interface CombinedMatrices {
 export function combineFirstOrderSecondOrderMatrices(
   stage1: SimplePlsModel,
   stage2: SimplePlsModel,
-  mmMatrix: MMMatrix,
+  mmMatrix: MmMatrix,
 ): CombinedMatrices {
   const appendedVars = [...new Set([...stage2.mmVariables, ...stage1.mmVariables])];
   const appendedConstructs = [...new Set([...stage2.constructs, ...stage1.constructs])];
@@ -133,7 +115,7 @@ export function combineFirstOrderSecondOrderMatrices(
 
   const membership = namedMatrix(appendedVars, appendedConstructs);
   for (const construct of appendedConstructs) {
-    for (const item of constructItems(mmMatrix, construct)) nmSet(membership, item, construct, 1);
+    for (const item of mmMatrix.constructItems(construct)) nmSet(membership, item, construct, 1);
   }
 
   const combine = (stage1Matrix: NamedMatrix, stage2Matrix: NamedMatrix): NamedMatrix => {

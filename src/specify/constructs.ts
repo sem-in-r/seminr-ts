@@ -181,3 +181,18 @@ export function higherComposite(
 export function constructs(...specs: MeasurementModelEntry[]): MeasurementModel {
   return specs;
 }
+
+/** Construct entries of a measurement model, narrowed to ConstructSpec. */
+export function constructSpecs(mm: MeasurementModel): ConstructSpec[] {
+  return mm.filter((e): e is ConstructSpec => e.kind === "construct");
+}
+
+/** Interaction entries of a measurement model, narrowed to InteractionSpec. */
+export function interactionSpecs(mm: MeasurementModel): InteractionSpec[] {
+  return mm.filter((e): e is InteractionSpec => e.kind === "interaction");
+}
+
+/** Entries that are not interactions, as seminr's `all_non_interactions()`. */
+export function nonInteractionSpecs(mm: MeasurementModel): MeasurementModel {
+  return mm.filter((e) => e.kind !== "interaction");
+}

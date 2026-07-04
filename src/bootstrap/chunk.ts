@@ -7,7 +7,7 @@
 
 import type { Dataset } from "../estimate/data.ts";
 import type { PlsSettings } from "../estimate/estimatePls.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
+import type { SMRow } from "../specify/relationships.ts";
 import {
   deserializeMeasurementModel,
   innerWeightsFromName,
@@ -19,7 +19,7 @@ import { bootReplication, type BootReplication } from "./bootstrap.ts";
 export interface BootstrapWorkerRequest {
   data: Dataset;
   measurementModel: SerializedMeasurementModel;
-  structuralModel: SMMatrix;
+  structuralModel: readonly Readonly<SMRow>[];
   settings: PlsSettings;
   innerWeights: InnerWeightsName;
   /** 0-based resample row indices, one array per replication in this chunk. */

@@ -3,11 +3,13 @@
  * mirroring seminr's lavaan_syntax.R rules exactly (string-for-string).
  */
 
-import type { MMMatrix } from "../model/mmMatrix.ts";
-import { allConstructs, constructItems, isReflective, isSingleItem } from "../model/mmMatrix.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
-import { allEndogenous, constructAntecedents } from "../model/smMatrix.ts";
-import type { ItemAssociations } from "../specify/associations.ts";
+import type { MmMatrix } from "../model/mmMatrix.ts";
+import type { SmMatrix } from "../model/smMatrix.ts";
+import {
+  associationPairs,
+  hasAssociations,
+  type ItemAssociations,
+} from "../specify/associations.ts";
 
 /** Make a construct/item name lavaan-safe: `*` -> `_x_`. */
 export function lavaanifyName(name: string): string {
@@ -19,14 +21,14 @@ export function unlavaanifyName(name: string): string {
   return name.replaceAll("_x_", "*");
 }
 
-function lavaanConstruct(construct: string, mmMatrix: MMMatrix): string {
+function lavaanConstruct(construct: string, mmMatrix: MmMatrix): string {
   const lavName = lavaanifyName(construct);
-  if (!isReflective(mmMatrix, construct)) {
+  if (!mmMatrix.isReflective(construct)) {
     throw new Error(`${lavName} must be a reflective construct for a CBSEM model`);
   }
-  const items = constructItems(mmMatrix, construct).map(lavaanifyName);
+  const items = mmMatrix.constructItems(construct).map(lavaanifyName);
   const lines = [`${lavName} =~ ${items.join(" + ")}`];
-  if (isSingleItem(mmMatrix, construct)) {
+  if (mmMatrix.isSingleItem(construct)) {
     // constrain error for single item constructs
     lines.push(`${items[0]} ~~ 0*${items[0]}`);
   }
@@ -34,19 +36,19 @@ function lavaanConstruct(construct: string, mmMatrix: MMMatrix): string {
 }
 
 /** `# Latent Variable Definitions` block. */
-export function lavaanMmSyntax(mmMatrix: MMMatrix): string {
-  const blocks = allConstructs(mmMatrix).map((c) => lavaanConstruct(c, mmMatrix));
+export function lavaanMmSyntax(mmMatrix: MmMatrix): string {
+  const blocks = mmMatrix.allConstructs().map((c) => lavaanConstruct(c, mmMatrix));
   return `# Latent Variable Definitions\n${blocks.join("\n")}`;
 }
 
-function lavaanRegression(outcome: string, sm: SMMatrix): string {
-  const antecedents = constructAntecedents(sm, outcome).map(lavaanifyName);
+function lavaanRegression(outcome: string, sm: SmMatrix): string {
+  const antecedents = sm.constructAntecedents(outcome).map(lavaanifyName);
   return `${lavaanifyName(outcome)} ~ ${antecedents.join(" + ")}`;
 }
 
 /** `# Regressions` block. */
-export function lavaanSmSyntax(sm: SMMatrix): string {
-  const lines = allEndogenous(sm).map((outcome) => lavaanRegression(outcome, sm));
+export function lavaanSmSyntax(sm: SmMatrix): string {
+  const lines = sm.allEndogenous().map((outcome) => lavaanRegression(outcome, sm));
   return `# Regressions\n${lines.join("\n")}`;
 }
 
@@ -54,14 +56,14 @@ export function lavaanSmSyntax(sm: SMMatrix): string {
 export function lavaanItemAssociations(
   itemAssociations: ItemAssociations | undefined | null,
 ): string | null {
-  if (!itemAssociations || itemAssociations.length === 0) return null;
-  const lines = itemAssociations.map(([a, b]) => `${a} ~~ ${b}`);
+  if (!hasAssociations(itemAssociations)) return null;
+  const lines = associationPairs(itemAssociations).map(([a, b]) => `${a} ~~ ${b}`);
   return `# Residual Covariances\n${lines.join("\n")}`;
 }
 
 export interface LavaanModelParts {
-  mmMatrix: MMMatrix;
-  structuralModel?: SMMatrix;
+  mmMatrix: MmMatrix;
+  structuralModel?: SmMatrix;
   itemAssociations?: ItemAssociations | null;
 }
 
@@ -73,7 +75,7 @@ export interface LavaanModelParts {
  */
 export function lavaanModelSyntax(parts: LavaanModelParts): string {
   const blocks: string[] = [lavaanMmSyntax(parts.mmMatrix)];
-  if (parts.structuralModel && parts.structuralModel.length > 0) {
+  if (parts.structuralModel && !parts.structuralModel.isEmpty()) {
     blocks.push(lavaanSmSyntax(parts.structuralModel));
   }
   blocks.push(lavaanItemAssociations(parts.itemAssociations) ?? "");

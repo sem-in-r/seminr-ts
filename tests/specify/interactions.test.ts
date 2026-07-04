@@ -13,8 +13,9 @@ import {
   multiItems,
   regressionWeights,
 } from "../../src/specify/constructs.ts";
-import { buildMmMatrix } from "../../src/model/mmMatrix.ts";
+import { MmMatrix } from "../../src/model/mmMatrix.ts";
 import { paths, relationships } from "../../src/specify/relationships.ts";
+import { SmMatrix } from "../../src/model/smMatrix.ts";
 import { selectColumns } from "../../src/estimate/data.ts";
 import { namedMatrix } from "../../src/math/matrix.ts";
 import { adjustInteraction } from "../../src/estimate/simplePls.ts";
@@ -40,9 +41,9 @@ const baseMm = constructs(
   composite("Value", multiItems("PERV", [1, 2])),
   composite("Satisfaction", multiItems("CUSA", [1, 2, 3])),
 );
-const m4Sm = relationships(
+const m4Sm = SmMatrix.fromRows(relationships(
   paths(["Image", "Expectation", "Value", "Image*Expectation"], "Satisfaction"),
-);
+));
 const measuredItems = [
   ...multiItems("IMAG", [1, 2, 3, 4, 5]),
   ...multiItems("CUEX", [1, 2, 3]),
@@ -52,7 +53,7 @@ const measuredItems = [
 
 const ctx: InteractionContext = {
   data: selectColumns(mobi, measuredItems),
-  mmMatrix: buildMmMatrix(baseMm),
+  mmMatrix: MmMatrix.fromMeasurementModel(baseMm),
   structuralModel: m4Sm,
   innerWeights: pathWeighting,
 };
@@ -157,7 +158,7 @@ describe("interactionTerm / quadraticTerm", () => {
 
 describe("adjustInteraction", () => {
   it("scales interaction scores by the |loading|-weighted mean of raw item SDs", () => {
-    const mm = buildMmMatrix(
+    const mm = MmMatrix.fromMeasurementModel(
       constructs(composite("A*B", ["p1", "p2"])),
     );
     // raw items p1 (sd 2) and p2 (sd 4); loadings 0.5 and 1

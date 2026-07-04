@@ -9,7 +9,7 @@ import {
   singleItem,
 } from "../../src/specify/constructs.ts";
 import { associations, itemErrors } from "../../src/specify/associations.ts";
-import { buildMmMatrix } from "../../src/model/mmMatrix.ts";
+import { MmMatrix } from "../../src/model/mmMatrix.ts";
 import { selectColumns } from "../../src/estimate/data.ts";
 import { loadFixture, loadMobi, type FixtureMatrix } from "../helpers/fixtures.ts";
 import { expectTestthatEqual, fixtureFreeEstimates, type CbsemFixture } from "./helpers.ts";
@@ -34,8 +34,8 @@ const mobi = await loadMobi();
 const c3cfaFx = await loadFixture<CbsemFixture>("cbsem-C3_cfa_doc");
 const c1Fx = await loadFixture<CbsemFixture>("cbsem-C1_cfa_demo");
 
-const c3cfaPt = buildParTable({ mmMatrix: buildMmMatrix(c3cfaMm), itemAssociations: c3cfaAm });
-const c1Pt = buildParTable({ mmMatrix: buildMmMatrix(c1Mm), itemAssociations: c1Am });
+const c3cfaPt = buildParTable({ mmMatrix: MmMatrix.fromMeasurementModel(c3cfaMm), itemAssociations: c3cfaAm });
+const c1Pt = buildParTable({ mmMatrix: MmMatrix.fromMeasurementModel(c1Mm), itemAssociations: c1Am });
 
 const expectMatrixCloseTo = (actual: number[][], fixture: FixtureMatrix, digits: number) => {
   expect(actual.length).toBe(fixture.values.length);

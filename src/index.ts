@@ -32,6 +32,9 @@ export {
   type HigherCompositeArgs,
   type MultiItemsArgs,
   type ItemAffix,
+  constructSpecs,
+  interactionSpecs,
+  nonInteractionSpecs,
 } from "./specify/constructs.ts";
 export {
   relationships,
@@ -53,7 +56,8 @@ export {
 } from "./specify/interactions.ts";
 
 // Model matrices and validation
-export { buildMmMatrix, type MMRow, type MMMatrix } from "./model/mmMatrix.ts";
+export { MmMatrix, type MMRow } from "./model/mmMatrix.ts";
+export { SmMatrix, isInteraction, type SmMatrixInput } from "./model/smMatrix.ts";
 export { assessModelSpecification } from "./model/validate.ts";
 
 // Estimation
@@ -124,7 +128,15 @@ export { namedMatrix, nmGet, nmSet, type NamedMatrix } from "./math/matrix.ts";
 // -----------------------------------------------------------------------------
 
 // Specification extensions
-export { associations, itemErrors, type ItemAssociations, type ItemPair } from "./specify/associations.ts";
+export {
+  associations,
+  itemErrors,
+  hasAssociations,
+  associationPairs,
+  associationItems,
+  type ItemAssociations,
+  type ItemPair,
+} from "./specify/associations.ts";
 export { asReflective, higherReflective } from "./specify/reflective.ts";
 
 // Estimation
@@ -142,7 +154,13 @@ export {
 } from "./cbsem/estimateCbsem.ts";
 
 // Summaries and metrics
-export { summarizeCfa, summarizeCbsem, type CfaSummary, type CbsemSummary } from "./cbsem/summarize.ts";
+export {
+  summarize,
+  summarizeCfa,
+  summarizeCbsem,
+  type CfaSummary,
+  type CbsemSummary,
+} from "./cbsem/summarize.ts";
 export { rhoCAve, antecedentVifs } from "./cbsem/summary.ts";
 export { fitMeasures } from "./cbsem/fitMeasures.ts";
 export { tenBergeScores, type TenBergeResult } from "./cbsem/tenBerge.ts";

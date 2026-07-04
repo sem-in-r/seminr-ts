@@ -6,14 +6,13 @@
 import { cov, cor, colCor } from "../math/stats.ts";
 import { solve, ols } from "../math/solve.ts";
 import { namedMatrix, nmSet, type NamedMatrix } from "../math/matrix.ts";
-import { constructItems, isModeB, isUnitWeighted, type MMMatrix } from "../model/mmMatrix.ts";
-import { constructAntecedents } from "../model/smMatrix.ts";
-import type { SMMatrix } from "../specify/relationships.ts";
+import type { MmMatrix } from "../model/mmMatrix.ts";
+import type { SmMatrix } from "../model/smMatrix.ts";
 import { getColumn, selectColumns, type ColumnMatrix } from "./data.ts";
 
 /** Computes one construct's outer weights from normalized data and current scores. */
 export type OuterModeFn = (
-  mmMatrix: MMMatrix,
+  mmMatrix: MmMatrix,
   construct: string,
   normData: ColumnMatrix,
   constructScores: ColumnMatrix,
@@ -22,12 +21,12 @@ export type OuterModeFn = (
 /** Mode A: covariance of each item with the construct score. */
 export const modeA: OuterModeFn = (mmMatrix, construct, normData, constructScores) => {
   const score = getColumn(constructScores, construct);
-  return constructItems(mmMatrix, construct).map((item) => cov(getColumn(normData, item), score));
+  return mmMatrix.constructItems(construct).map((item) => cov(getColumn(normData, item), score));
 };
 
 /** Mode B: solve(cor(items), cor(items, score)). */
 export const modeB: OuterModeFn = (mmMatrix, construct, normData, constructScores) => {
-  const items = constructItems(mmMatrix, construct);
+  const items = mmMatrix.constructItems(construct);
   const itemData = selectColumns(normData, items);
   const itemCors = colCor(itemData.values, itemData.values);
   const score = getColumn(constructScores, construct);
@@ -37,21 +36,21 @@ export const modeB: OuterModeFn = (mmMatrix, construct, normData, constructScore
 
 /** Unit weights: all ones. */
 export const unitWeightsFn: OuterModeFn = (mmMatrix, construct) =>
-  constructItems(mmMatrix, construct).map(() => 1);
+  mmMatrix.constructItems(construct).map(() => 1);
 
 /**
  * Map a construct to its outer mode function, as seminr's `construct_mode_fn`:
  * reflective (C) and mode A families use mode_A; B families use mode_B; UNIT uses unit weights.
  */
-export function constructModeFn(mmMatrix: MMMatrix, construct: string): OuterModeFn {
-  if (isModeB(mmMatrix, construct)) return modeB;
-  if (isUnitWeighted(mmMatrix, construct)) return unitWeightsFn;
+export function constructModeFn(mmMatrix: MmMatrix, construct: string): OuterModeFn {
+  if (mmMatrix.isModeB(construct)) return modeB;
+  if (mmMatrix.isUnitWeighted(construct)) return unitWeightsFn;
   return modeA;
 }
 
 /** Computes the inner paths matrix from current construct scores. */
 export type InnerWeightsFn = (
-  smMatrix: SMMatrix,
+  smMatrix: SmMatrix,
   constructScores: ColumnMatrix,
   dependant: readonly string[],
   pathsMatrix: NamedMatrix,
@@ -76,7 +75,7 @@ export const pathWeighting: InnerWeightsFn = (smMatrix, constructScores, dependa
     }
   }
   for (const dv of dependant) {
-    const antecedents = constructAntecedents(smMatrix, dv);
+    const antecedents = smMatrix.constructAntecedents(dv);
     const x = selectColumns(constructScores, antecedents).values;
     const y = getColumn(constructScores, dv);
     const betas = ols(x, y);
