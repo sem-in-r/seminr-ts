@@ -10,7 +10,9 @@ import {
   relationships,
   paths,
   estimatePls,
+  summarizePls,
   bootstrapModel,
+  summarizePlsBoot,
   bootstrapModelParallel,
   nmGet,
 } from "../src/index.ts";
@@ -35,12 +37,35 @@ describe("README usage example", () => {
     expect(imagePath).toBeGreaterThan(0.4);
     expect(nmGet(model.rSquared, "Rsq", "Satisfaction")).toBeGreaterThan(0.3);
 
+    // README: summarizePls assembles the assessment report
+    const summary = summarizePls(model);
+    expect(nmGet(summary.paths, "Image", "Satisfaction")).toBe(imagePath);
+    expect(nmGet(summary.paths, "R^2", "Satisfaction")).toBeGreaterThan(0.3);
+    expect(summary.reliability.cols).toEqual(["alpha", "rhoA", "rhoC", "AVE"]);
+    expect(summary.validity.htmt.rows).toContain("Satisfaction");
+    expect(summary.fSquare.rows).toContain("Image");
+
     const boot = bootstrapModel(model, { nboot: 50, seed: 123 });
     expect(boot.boots).toBe(50);
     const bootSd = nmGet(boot.pathsDescriptives, "Image", "Satisfaction Boot SD");
     expect(bootSd).toBeGreaterThan(0);
     // t-value for the Image -> Satisfaction path
     expect(imagePath / bootSd).toBeGreaterThan(2);
+
+    // README: summarizePlsBoot reports est./boot mean/SD/t/CI per path
+    const bootSummary = summarizePlsBoot(boot);
+    expect(bootSummary.bootstrappedPaths.cols).toEqual([
+      "Original Est.",
+      "Bootstrap Mean",
+      "Bootstrap SD",
+      "T Stat.",
+      "2.5% CI",
+      "97.5% CI",
+      "Bootstrap P Val",
+    ]);
+    expect(
+      nmGet(bootSummary.bootstrappedPaths, "Image  ->  Satisfaction", "Original Est."),
+    ).toBe(imagePath);
 
     // README: parallel bootstrap across Web Workers — identical results
     const parallel = await bootstrapModelParallel(model, { nboot: 50, seed: 123 });

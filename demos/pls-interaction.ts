@@ -4,7 +4,7 @@
  * Image × Expectation interaction is estimated with all three generation
  * methods for comparison.
  *
- * Run: bun run demos/pls-interaction.ts
+ * Run: bun run build && bun run demos/pls-interaction.ts
  */
 import {
   constructs,

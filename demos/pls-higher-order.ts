@@ -3,7 +3,7 @@
  * mirroring seminr's `seminr-pls-higher_order` demo: Satisfaction as a
  * second-order composite of the Image and Value first-order constructs.
  *
- * Run: bun run demos/pls-higher-order.ts
+ * Run: bun run build && bun run demos/pls-higher-order.ts
  */
 import {
   constructs,

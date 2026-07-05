@@ -2,7 +2,7 @@
  * Demonstration of PLS estimation of the full ECSI model on the mobi dataset,
  * mirroring seminr's `seminr-pls-ecsi` demo, plus a worker-parallel bootstrap.
  *
- * Run: bun run demos/pls-ecsi.ts
+ * Run: bun run build && bun run demos/pls-ecsi.ts
  */
 import {
   constructs,

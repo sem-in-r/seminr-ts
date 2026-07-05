@@ -3,7 +3,7 @@
  * reflective constructs, mirroring seminr's `seminr-plsc-ecsi` demo.
  * PLSc is applied automatically whenever reflective constructs are present.
  *
- * Run: bun run demos/plsc-ecsi.ts
+ * Run: bun run build && bun run demos/plsc-ecsi.ts
  */
 import {
   constructs,

@@ -4,7 +4,7 @@
  * as /demo-utils.js) for the browser target on startup, then serves them with
  * the page, the editable example sources (snippet-*.js), and the mobi dataset.
  *
- * Run: bun run demos/browser/serve.ts   (then open the printed URL)
+ * Run: bun run build && bun run demos/browser/serve.ts   (then open the printed URL)
  */
 import { mobiCsvUrl } from "../lib/mobi.ts";
 

@@ -3,7 +3,7 @@
  * models over the same measurement model, mirroring seminr's
  * `seminr-alternative-models` demo.
  *
- * Run: bun run demos/alternative-models.ts
+ * Run: bun run build && bun run demos/alternative-models.ts
  */
 import {
   constructs,
