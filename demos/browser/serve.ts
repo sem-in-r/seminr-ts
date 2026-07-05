@@ -4,7 +4,7 @@
  * as /demo-utils.js) for the browser target on startup, then serves them with
  * the page, the editable example sources (snippet-*.js), and the mobi dataset.
  *
- * Run: bun run demos/browser/serve.ts   (then open the printed URL)
+ * Run: bun run build && bun run demos/browser/serve.ts   (then open the printed URL)
  */
 import { mobiCsvUrl } from "../lib/mobi.ts";
 
@@ -19,10 +19,10 @@ const BUNDLE_ALIASES: Record<string, string> = {
 async function buildAssets(): Promise<Map<string, string>> {
   const result = await Bun.build({
     entrypoints: [
-      new URL("./app.ts", import.meta.url).pathname,
-      new URL("../../src/workers/worker.ts", import.meta.url).pathname,
-      new URL("../../src/index.ts", import.meta.url).pathname,
-      new URL("../lib/print.ts", import.meta.url).pathname,
+      Bun.fileURLToPath(new URL("./app.ts", import.meta.url)),
+      Bun.fileURLToPath(new URL("../../src/workers/worker.ts", import.meta.url)),
+      Bun.fileURLToPath(new URL("../../src/index.ts", import.meta.url)),
+      Bun.fileURLToPath(new URL("../lib/print.ts", import.meta.url)),
     ],
     target: "browser",
   });

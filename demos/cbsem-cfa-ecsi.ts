@@ -4,7 +4,7 @@
  * - CFA to confirm the measurement model (with freed item-error covariances)
  * - full CBSEM with a product-indicator interaction
  *
- * Run: bun run demos/cbsem-cfa-ecsi.ts
+ * Run: bun run build && bun run demos/cbsem-cfa-ecsi.ts
  */
 import {
   constructs,
@@ -21,7 +21,7 @@ import {
   estimateCbsem,
   summarizeCfa,
   summarizeCbsem,
-} from "../src/index.ts";
+} from "semints";
 import { loadMobi } from "./lib/mobi.ts";
 import { heading, formatMatrix } from "./lib/print.ts";
 

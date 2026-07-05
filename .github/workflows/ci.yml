@@ -1,0 +1,34 @@
+# Mirrors seminr's R-CMD-check trigger policy (../seminr/.github/workflows/
+# rcmdcheck.yml): every push to the default branch, every PR, and manual
+# dispatch, across all three OSes without fail-fast.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  check:
+    name: ${{ matrix.os }} (bun latest)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun run typecheck
+      - run: bun run typecheck:demos
+      - run: bun test
+      - run: bun run smoke:pack
+      - name: Demo smoke
+        run: bun run demos/pls-ecsi.ts

@@ -4,11 +4,14 @@
  * formatPls* helpers lay sections out like seminr's print.summary.* methods
  * (report_summary.R), with NA cells printed as "." (R's na.print default).
  */
-import { namedMatrix, type NamedMatrix } from "../../src/math/matrix.ts";
-import type { PlsSummary } from "../../src/evaluate/summarizePls.ts";
-import type { PlsBootSummary } from "../../src/bootstrap/summarize.ts";
-import type { PlsPredictSummary } from "../../src/predict/metrics.ts";
-import type { PlsMgaPath } from "../../src/mga/estimatePlsMga.ts";
+import {
+  namedMatrix,
+  type NamedMatrix,
+  type PlsSummary,
+  type PlsBootSummary,
+  type PlsPredictSummary,
+  type PlsMgaPath,
+} from "semints";
 
 export function heading(title: string): string {
   return `\n== ${title} ==`;

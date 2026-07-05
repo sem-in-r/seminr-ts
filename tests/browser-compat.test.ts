@@ -5,8 +5,8 @@
 import { describe, it, expect } from "bun:test";
 
 const entrypoints = [
-  new URL("../src/index.ts", import.meta.url).pathname,
-  new URL("../src/workers/worker.ts", import.meta.url).pathname,
+  Bun.fileURLToPath(new URL("../src/index.ts", import.meta.url)),
+  Bun.fileURLToPath(new URL("../src/workers/worker.ts", import.meta.url)),
 ];
 
 describe("browser compatibility", () => {

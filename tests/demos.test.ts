@@ -3,9 +3,18 @@
  * `bun run demos/<name>.ts` and print its key result sections; the browser
  * demo's server must build browser bundles and serve every asset.
  */
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, beforeAll } from "bun:test";
 
-const repoRoot = new URL("..", import.meta.url).pathname;
+const repoRoot = Bun.fileURLToPath(new URL("..", import.meta.url));
+
+// Demos consume the built package via the "semints" self-reference, so a
+// fresh (or stale) dist/ must be built before they can run.
+beforeAll(() => {
+  const proc = Bun.spawnSync(["bun", "run", "build"], { cwd: repoRoot });
+  if (proc.exitCode !== 0) {
+    throw new Error(`bun run build failed:\n${proc.stderr.toString()}`);
+  }
+}, 120000);
 
 async function runDemo(script: string): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   const proc = Bun.spawn(["bun", "run", script], {

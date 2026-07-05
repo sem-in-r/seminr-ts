@@ -3,7 +3,7 @@
  * models over the same measurement model, mirroring seminr's
  * `seminr-alternative-models` demo.
  *
- * Run: bun run demos/alternative-models.ts
+ * Run: bun run build && bun run demos/alternative-models.ts
  */
 import {
   constructs,
@@ -14,7 +14,7 @@ import {
   paths,
   estimatePls,
   type SMMatrix,
-} from "../src/index.ts";
+} from "semints";
 import { loadMobi } from "./lib/mobi.ts";
 import { heading, formatMatrix } from "./lib/print.ts";
 

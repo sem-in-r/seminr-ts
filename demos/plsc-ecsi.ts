@@ -3,7 +3,7 @@
  * reflective constructs, mirroring seminr's `seminr-plsc-ecsi` demo.
  * PLSc is applied automatically whenever reflective constructs are present.
  *
- * Run: bun run demos/plsc-ecsi.ts
+ * Run: bun run build && bun run demos/plsc-ecsi.ts
  */
 import {
   constructs,
@@ -14,7 +14,7 @@ import {
   paths,
   estimatePls,
   rhoA,
-} from "../src/index.ts";
+} from "semints";
 import { loadMobi } from "./lib/mobi.ts";
 import { heading, formatMatrix } from "./lib/print.ts";
 

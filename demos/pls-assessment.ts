@@ -3,7 +3,7 @@
  * estimate -> summarize (evaluation/validity suite) -> bootstrap summary ->
  * PLSpredict -> PLS-MGA, printed in seminr's summary layouts.
  *
- * Run: bun run demos/pls-assessment.ts
+ * Run: bun run build && bun run demos/pls-assessment.ts
  */
 import {
   constructs,
@@ -19,8 +19,8 @@ import {
   predictPls,
   summarizePlsPredict,
   estimatePlsMga,
-} from "../src/index.ts";
-import { getColumn } from "../src/estimate/data.ts";
+  getColumn,
+} from "semints";
 import { loadMobi } from "./lib/mobi.ts";
 import {
   heading,

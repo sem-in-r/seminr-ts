@@ -14,7 +14,7 @@ describe("TS-native import specifiers", () => {
   it("no relative .js module specifier remains in src, tests, demos, or scripts", async () => {
     const glob = new Bun.Glob("{src,tests,demos,scripts}/**/*.ts");
     const offenders: string[] = [];
-    for await (const path of glob.scan(new URL("..", import.meta.url).pathname)) {
+    for await (const path of glob.scan(Bun.fileURLToPath(new URL("..", import.meta.url)))) {
       const source = await Bun.file(new URL(`../${path}`, import.meta.url)).text();
       for (const match of source.matchAll(RELATIVE_JS_SPECIFIER)) {
         offenders.push(`${path}: ${match[1]}`);
