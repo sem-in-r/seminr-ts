@@ -15,6 +15,11 @@
 - **`is_only_endogenous`** — NAMESPACE-exported but defined in `plot_dot.R` against the dot-graph coding; belongs to the plotting layer below.
 - **`computeItCriteriaWeights` NaN handling** — deviates from seminr's NA-poisoned `min()` (its `na.rm` only guards the sum); we skip NaNs in both, honoring the na.rm intent (documented in the source).
 
+## Performance follow-ups (branch `performance`, 2026-07-06)
+
+- **Flat typed-array (Float64Array) matrix storage** — deliberately deferred (plan Q2). After the `performance` branch landed the algorithmic wins (single-pass column stats, iteration-invariant outer-mode preparation, in-place standardization, shared design-matrix factorization), the remaining simplePLS loop cost is fundamental `number[][]` matmul/standardize arithmetic. Flat storage would rewrite every matrix consumer for an unproven constant factor; revisit only if a future profile shows matmul dominating a workload that matters. `benchmark/equivalence.ts` (tolerance-0 harness) is the safety net if attempted.
+- **CBSEM/CFA estimator performance** — out of the `performance` branch's scope (own optimizer/gradient code paths); profile separately if CBSEM bootstrap-style workloads ever appear.
+
 ## Out of scope (both estimators) — will have to get done eventually
 
 1. **Plotting / presentation layer** — `dot_graph*`, themes (`seminr_theme_*`), `plot_htmt`, `plot_scores`, `plot_interaction` + `slope_analysis` (R-graphics simple-slopes plot), `save_plot`/`browse_plot`, and the `print.summary.*` console formatters. semints returns data objects; rendering belongs in a separate visualization package if ever.
@@ -32,4 +37,4 @@
 
 ---
 
-Last updated: 2026-07-04 (post-`parity` merge: PLS/CBSEM parity items 1–10 shipped and pruned; plotting + packaging retained)
+Last updated: 2026-07-06 (branch `performance`: PLS iterative-routine speedups shipped; typed-array storage + CBSEM profiling recorded as deferrals)
