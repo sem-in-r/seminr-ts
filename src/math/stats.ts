@@ -48,6 +48,30 @@ export function standardize(values: readonly (readonly number[])[], colNames?: r
   return { values: out, means, sds };
 }
 
+/**
+ * In-place column z-scoring of a freshly allocated matrix — arithmetic
+ * identical to `standardize()` (same mean and SD passes, same division per
+ * cell) without the column-extraction and output allocations. Throws on
+ * zero-variance columns like `standardize()`.
+ */
+export function standardizeInPlace(values: number[][]): void {
+  const nrow = values.length;
+  const ncol = values[0]!.length;
+  for (let j = 0; j < ncol; j++) {
+    let sum = 0;
+    for (let i = 0; i < nrow; i++) sum += values[i]![j]!;
+    const m = sum / nrow;
+    let ss = 0;
+    for (let i = 0; i < nrow; i++) {
+      const d = values[i]![j]! - m;
+      ss += d * d;
+    }
+    const s = Math.sqrt(ss / (nrow - 1));
+    if (s === 0) throw new Error(`Cannot standardize: zero variance in column ${j}`);
+    for (let i = 0; i < nrow; i++) values[i]![j] = (values[i]![j]! - m) / s;
+  }
+}
+
 /** Sample covariance (n−1 denominator), as R's `cov()`. */
 export function cov(x: readonly number[], y: readonly number[]): number {
   const mx = mean(x);
