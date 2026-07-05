@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, beforeAll } from "bun:test";
 
-const repoRoot = new URL("..", import.meta.url).pathname;
+const repoRoot = Bun.fileURLToPath(new URL("..", import.meta.url));
 
 // Demos consume the built package via the "semints" self-reference, so a
 // fresh (or stale) dist/ must be built before they can run.
