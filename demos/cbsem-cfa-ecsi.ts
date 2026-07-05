@@ -21,7 +21,7 @@ import {
   estimateCbsem,
   summarizeCfa,
   summarizeCbsem,
-} from "../src/index.ts";
+} from "semints";
 import { loadMobi } from "./lib/mobi.ts";
 import { heading, formatMatrix } from "./lib/print.ts";
 

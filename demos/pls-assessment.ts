@@ -19,8 +19,8 @@ import {
   predictPls,
   summarizePlsPredict,
   estimatePlsMga,
-} from "../src/index.ts";
-import { getColumn } from "../src/estimate/data.ts";
+  getColumn,
+} from "semints";
 import { loadMobi } from "./lib/mobi.ts";
 import {
   heading,

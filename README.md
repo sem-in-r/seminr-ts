@@ -233,9 +233,12 @@ bun run build
 
 ## Demos
 
-Runnable examples (mirroring seminr's `demo/` scripts) live in `demos/`:
+Runnable examples (mirroring seminr's `demo/` scripts) live in `demos/`. They
+consume the built package — they import `"semints"` exactly as an installed
+consumer would — so build first:
 
 ```sh
+bun run build
 bun run demos/pls-ecsi.ts            # full ECSI model + worker-parallel bootstrap
 bun run demos/plsc-ecsi.ts           # consistent PLS (PLSc) with reflective constructs
 bun run demos/pls-interaction.ts     # moderation via all three interaction methods

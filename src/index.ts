@@ -96,7 +96,13 @@ export {
 } from "./estimate/schemes.ts";
 export { rhoA } from "./estimate/consistent.ts";
 export { rerun, type RerunOverrides } from "./estimate/rerun.ts";
-export type { Dataset } from "./estimate/data.ts";
+export {
+  columnIndex,
+  getColumn,
+  selectColumns,
+  type Dataset,
+  type ColumnMatrix,
+} from "./estimate/data.ts";
 export { parseCsv } from "./data/csv.ts";
 
 // PLS model evaluation (reliability/validity/effects/descriptives) and summary

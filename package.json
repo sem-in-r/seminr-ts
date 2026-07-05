@@ -28,7 +28,8 @@
     "test": "bun test",
     "test:coverage": "bun test --coverage",
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit && tsc -p demos",
+    "typecheck": "tsc --noEmit",
+    "typecheck:demos": "bun run build && tsc -p demos",
     "smoke:pack": "bun run scripts/smoke-pack.ts",
     "prepublishOnly": "bun run build && bun test"
   },

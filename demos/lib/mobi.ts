@@ -1,6 +1,5 @@
 /** Demo data loading (Bun). The mobi/ECSI dataset ships as a test fixture. */
-import { parseCsv } from "../../src/data/csv.ts";
-import type { Dataset } from "../../src/estimate/data.ts";
+import { parseCsv, type Dataset } from "semints";
 
 export const mobiCsvUrl = new URL("../../tests/fixtures/data/mobi.csv", import.meta.url);
 
