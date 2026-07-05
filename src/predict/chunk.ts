@@ -5,7 +5,8 @@
  * the request/response is plain data — safe to structured-clone.
  */
 
-import { ols } from "../math/solve.ts";
+import { solve } from "../math/solve.ts";
+import { matmul, transpose } from "../math/matrix.ts";
 import { estimatePls, type EstimatePlsOptions } from "../estimate/estimatePls.ts";
 import type { Dataset } from "../estimate/data.ts";
 import type { MeasurementModel } from "../specify/constructs.ts";
@@ -84,12 +85,24 @@ function lmPredictions(
   const xTrain = trainRows.map(designRow);
   const xTest = testRows.map(designRow);
 
+  // the design matrix is shared by every dependent item: factor X' and X'X
+  // once, then each item's OLS solves against its own X'y — bit-identical to
+  // per-item ols() calls, which rebuilt the identical X'X every time
+  // (seminr 1e2f7f4's shared-QR multivariate lm, in normal-equation form)
+  const xt = transpose(xTrain);
+  const xtx = matmul(xt, xTrain);
+
   const inSample = trainRows.map(() => new Array<number>(depItems.length));
   const outSample = testRows.map(() => new Array<number>(depItems.length));
   depItems.forEach((item, d) => {
     const j = dataMm.columns.indexOf(item);
     const y = trainRows.map((r) => dataMm.values[r]![j]!);
-    const beta = ols(xTrain, y);
+    const xty = xt.map((row) => {
+      let s = 0;
+      for (let i = 0; i < row.length; i++) s += row[i]! * y[i]!;
+      return s;
+    });
+    const beta = solve(xtx, xty);
     const predict = (row: readonly number[]): number =>
       row.reduce((s, v, k) => s + v * beta[k]!, 0);
     xTrain.forEach((row, r) => {
