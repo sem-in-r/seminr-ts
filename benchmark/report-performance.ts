@@ -10,9 +10,9 @@
  *   bun run benchmark/report-performance.ts --baseline 604d329 --after <commit>
  *
  * Defaults: --baseline 604d329 (the branch-cut commit), --after = current HEAD.
- * Output: .claude/plans/PLAN.performance-report.html — archived beside the
- * branch plan (gitignored, Sideways-synced), matching seminr's convention of
- * keeping the performance report with its plan. Override with --out.
+ * Output: benchmark/report-performance.html (git-ignored, machine-specific);
+ * override with --out. The `performance` branch's final report was archived
+ * once to .claude/plans/PLAN.performance-report.html beside its plan.
  */
 import { $ } from "bun";
 import { SEMINR_REFERENCE, SEMINR_ENV } from "./reference-seminr.ts";
@@ -190,6 +190,6 @@ Raw medians in <code>benchmark/results/</code>.</p>
 </html>
 `;
 
-const outPath = argValue("--out") ?? `${repoRoot}.claude/plans/PLAN.performance-report.html`;
+const outPath = argValue("--out") ?? `${repoRoot}benchmark/report-performance.html`;
 await Bun.write(outPath, html);
 console.log(`Report → ${outPath} (baseline ${baselineCommit}, after ${afterCommit})`);

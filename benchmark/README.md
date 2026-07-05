@@ -41,8 +41,7 @@ Open the report with `open benchmark/report.html`.
   `performance` branch to prove optimizations change no output bit.
 - `report-performance.ts` — before/after report generator: reads two
   `results/semints-<commit>.json` files and renders
-  `.claude/plans/PLAN.performance-report.html` (archived beside the branch
-  plan, gitignored/Sideways-synced like the plans; `--out` overrides) with
+  `report-performance.html` (git-ignored; `--out` overrides) with
   per-routine speedups.
 
 ## Scenarios
