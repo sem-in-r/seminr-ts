@@ -62,3 +62,33 @@ export function ols(x: readonly (readonly number[])[], y: readonly number[]): nu
   });
   return solve(xtx, xty);
 }
+
+/**
+ * OLS from predictor columns: X'X and X'y accumulated directly from column
+ * arrays in the same index order as {@link ols}'s transpose/matmul path, so
+ * coefficients are bit-identical while skipping both allocations.
+ */
+export function olsColumns(
+  cols: readonly (readonly number[])[],
+  y: readonly number[],
+): number[] {
+  const k = cols.length;
+  const n = y.length;
+  const xtx: number[][] = new Array(k);
+  const xty = new Array<number>(k);
+  for (let p = 0; p < k; p++) {
+    const cp = cols[p]!;
+    const row = new Array<number>(k);
+    for (let q = 0; q < k; q++) {
+      const cq = cols[q]!;
+      let s = 0;
+      for (let i = 0; i < n; i++) s += cp[i]! * cq[i]!;
+      row[q] = s;
+    }
+    xtx[p] = row;
+    let s = 0;
+    for (let i = 0; i < n; i++) s += cp[i]! * y[i]!;
+    xty[p] = s;
+  }
+  return solve(xtx, xty);
+}

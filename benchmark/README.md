@@ -35,6 +35,14 @@ Open the report with `open benchmark/report.html`.
 - `reference-seminr.ts` — seminr's published baseline/optimized medians,
   transcribed from its performance report, keyed by scenario. **Update these if
   you re-measure seminr** (re-run `../seminr/bench/benchmark.R`).
+- `equivalence.ts` — bit-identical refactor guard: 16 fixed-seed scenarios
+  serialized and compared at tolerance 0 against a captured baseline
+  (`--capture` writes `equivalence-baseline.json`, git-ignored). Used by the
+  `performance` branch to prove optimizations change no output bit.
+- `report-performance.ts` — before/after report generator: reads two
+  `results/semints-<commit>.json` files and renders
+  `report-performance.html` (git-ignored; `--out` overrides) with
+  per-routine speedups.
 
 ## Scenarios
 

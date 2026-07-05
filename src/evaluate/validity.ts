@@ -5,7 +5,7 @@
  * and antecedent VIFs (evaluate_validity.R:24-36).
  */
 
-import { colCor } from "../math/stats.ts";
+import { colCor, centerColumns, corFromCentered } from "../math/stats.ts";
 import { namedMatrix, nmGet, type NamedMatrix } from "../math/matrix.ts";
 import { inverse } from "../math/solve.ts";
 import { selectColumns } from "../estimate/data.ts";
@@ -30,12 +30,17 @@ export function htmt(model: PlsModel): NamedMatrix {
   const { names } = constructsInModel(model);
   const out = nanMatrix(names, names);
 
-  // mean off-diagonal absolute within-block correlation, 1 for single items
-  const monotrait = names.map((construct) => {
+  // each construct's item block is selected and centered exactly once; the
+  // per-pair correlations below reuse these stats (seminr 6331445 discipline)
+  const blocks = names.map((construct) => {
     const items = model.mmMatrix.constructItems(construct);
+    return { items, stats: centerColumns(selectColumns(model.data, items).values) };
+  });
+
+  // mean off-diagonal absolute within-block correlation, 1 for single items
+  const monotrait = blocks.map(({ items, stats }) => {
     if (items.length <= 1) return 1;
-    const values = selectColumns(model.data, items).values;
-    const r = colCor(values, values);
+    const r = corFromCentered(stats, stats);
     let sum = 0;
     for (let i = 0; i < items.length; i++) {
       for (let j = i + 1; j < items.length; j++) sum += Math.abs(r[i]![j]!);
@@ -44,10 +49,8 @@ export function htmt(model: PlsModel): NamedMatrix {
   });
 
   for (let i = 0; i < names.length - 1; i++) {
-    const itemsI = selectColumns(model.data, model.mmMatrix.constructItems(names[i]!));
     for (let j = i + 1; j < names.length; j++) {
-      const itemsJ = selectColumns(model.data, model.mmMatrix.constructItems(names[j]!));
-      const r = colCor(itemsI.values, itemsJ.values);
+      const r = corFromCentered(blocks[i]!.stats, blocks[j]!.stats);
       let sum = 0;
       for (const row of r) for (const v of row) sum += Math.abs(v);
       const heterotrait = sum / (r.length * r[0]!.length);

@@ -34,6 +34,13 @@ export interface MissingDataStrategy {
  * warning when a column is more than 5% missing (seminr's `mean_replacement`).
  */
 export const meanReplacement: MissingDataStrategy = (data) => {
+  // fast path: complete data has nothing to replace — return it unchanged
+  // (bootstrap replications hit this once per resample)
+  const complete = data.values.every((row) =>
+    row.every((v) => v !== null && v !== undefined && !Number.isNaN(v)),
+  );
+  if (complete) return { data, warnings: [] };
+
   const warnings: string[] = [];
   const n = data.values.length;
   const values = data.values.map((row) => [...row]);

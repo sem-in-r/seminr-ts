@@ -112,12 +112,15 @@ export function bootReplication(
 }
 
 function resampleRows(data: Dataset, indices: readonly number[]): Dataset {
+  // rows are shared, not copied: estimation only reads them (selectColumns /
+  // standardize copy before any mutation), and the replication model is
+  // discarded after its statistics are extracted
   return {
     columns: data.columns,
     values: indices.map((i) => {
       const row = data.values[i];
       if (!row) throw new Error(`Resample index out of range: ${i}`);
-      return [...row];
+      return row;
     }),
   };
 }

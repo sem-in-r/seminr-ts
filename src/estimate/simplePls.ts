@@ -1,12 +1,18 @@
 /** Core simplePLS estimation loop (seminr estimate_simplePLS.R:73-199). */
 
-import { standardize, colCov, colCor, sd } from "../math/stats.ts";
-import { matmul, namedMatrix, nmSet, type NamedMatrix, type Matrix } from "../math/matrix.ts";
-import { inverse, ols } from "../math/solve.ts";
+import { standardize, standardizeInPlace, colCov, colCor, sd } from "../math/stats.ts";
+import { matmul, namedMatrix, nmSet, zeros, type NamedMatrix, type Matrix } from "../math/matrix.ts";
+import { inverse, olsColumns } from "../math/solve.ts";
 import type { MmMatrix } from "../model/mmMatrix.ts";
 import { isInteraction, type SmMatrix } from "../model/smMatrix.ts";
 import { getColumn, selectColumns, type ColumnMatrix, type Dataset } from "./data.ts";
-import { constructModeFn, pathWeighting, type InnerWeightsFn, type OuterModeFn } from "./schemes.ts";
+import {
+  constructModeFn,
+  pathWeighting,
+  prepareBuiltinOuterMode,
+  type InnerWeightsFn,
+  type OuterModeFn,
+} from "./schemes.ts";
 import { DEFAULT_MAX_IT, DEFAULT_STOP_CRITERION } from "./constants.ts";
 
 export interface SimplePlsOptions {
@@ -118,7 +124,10 @@ export function estimatePathCoef(
   const coef = namedMatrix(pathsMatrix.rows, pathsMatrix.cols, pathsMatrix.values.map((r) => [...r]));
   for (const dv of dependant) {
     const antecedents = smMatrix.constructAntecedents(dv);
-    const betas = ols(selectColumns(scores, antecedents).values, getColumn(scores, dv));
+    const betas = olsColumns(
+      antecedents.map((a) => getColumn(scores, a)),
+      getColumn(scores, dv),
+    );
     antecedents.forEach((iv, k) => nmSet(coef, iv, dv, betas[k]!));
   }
   return coef;
@@ -181,28 +190,55 @@ export function simplePls(
   const pathsMatrix = initialPathsMatrix(smMatrix, constructs);
 
   const itemIndexOf = new Map(mmVariables.map((v, i) => [v, i]));
-  const constructIndexOf = new Map(constructs.map((c, j) => [c, j]));
+
+  // Iteration-invariant preparation: builtin outer modes close over normData's
+  // (fixed) item columns; custom mode functions keep the generic call below.
+  const preparedModes = constructs.map((c) =>
+    prepareBuiltinOuterMode(modeScheme[c]!, mmMatrix, c, normData),
+  );
+  const constructItemRows = constructs.map((c) =>
+    mmMatrix.constructItems(c).map((item) => itemIndexOf.get(item)!),
+  );
+
+  const nObs = normData.values.length;
+  const lastWeights = zeros(mmVariables.length, constructs.length);
 
   let iterations = 0;
   let weightDiff = Number.POSITIVE_INFINITY;
   const threshold = Math.pow(10, -stopCriterion);
 
   for (iterations = 0; iterations <= maxIt; iterations++) {
-    let scoreValues = standardize(matmul(normData.values, outerWeights.values)).values;
-    let scores: ColumnMatrix = { columns: constructs, values: scoreValues };
+    let scoreValues = matmul(normData.values, outerWeights.values);
+    standardizeInPlace(scoreValues);
 
-    const innerPaths = innerWeights(smMatrix, scores, dependant, pathsMatrix);
-    scoreValues = standardize(matmul(scoreValues, innerPaths.values)).values;
-    scores = { columns: constructs, values: scoreValues };
+    const innerPaths = innerWeights(
+      smMatrix,
+      { columns: constructs, values: scoreValues },
+      dependant,
+      pathsMatrix,
+    );
+    scoreValues = matmul(scoreValues, innerPaths.values);
+    standardizeInPlace(scoreValues);
+    const scores: ColumnMatrix = { columns: constructs, values: scoreValues };
 
-    const lastWeights = outerWeights.values.map((r) => [...r]);
+    for (let i = 0; i < mmVariables.length; i++) {
+      const src = outerWeights.values[i]!;
+      const dst = lastWeights[i]!;
+      for (let j = 0; j < constructs.length; j++) dst[j] = src[j]!;
+    }
 
-    for (const construct of constructs) {
-      const newWeights = modeScheme[construct]!(mmMatrix, construct, normData, scores);
-      const j = constructIndexOf.get(construct)!;
-      mmMatrix.constructItems(construct).forEach((item, k) => {
-        outerWeights.values[itemIndexOf.get(item)!]![j] = newWeights[k]!;
-      });
+    for (let j = 0; j < constructs.length; j++) {
+      const prepared = preparedModes[j];
+      let newWeights: number[];
+      if (prepared) {
+        const scoreColumn = new Array<number>(nObs);
+        for (let i = 0; i < nObs; i++) scoreColumn[i] = scoreValues[i]![j]!;
+        newWeights = prepared(scoreColumn);
+      } else {
+        newWeights = modeScheme[constructs[j]!]!(mmMatrix, constructs[j]!, normData, scores);
+      }
+      const rows = constructItemRows[j]!;
+      for (let k = 0; k < rows.length; k++) outerWeights.values[rows[k]!]![j] = newWeights[k]!;
     }
 
     standardizeOuterWeightsInPlace(normData.values, outerWeights);
@@ -220,9 +256,13 @@ export function simplePls(
   const finalScoreValues = matmul(normData.values, outerWeights.values);
   const finalScores: ColumnMatrix = { columns: constructs, values: finalScoreValues };
 
-  let outerLoadings = calculateLoadings(weightsMask, finalScoreValues, normData.values);
-  adjustInteraction(constructs, mmMatrix, outerLoadings, finalScores, obsData);
-  outerLoadings = calculateLoadings(weightsMask, finalScoreValues, normData.values);
+  // the pre-adjustment loadings pass only feeds adjustInteraction, and both
+  // are no-ops without interaction constructs (seminr e33fb49)
+  if (constructs.some((c) => isInteraction(c))) {
+    const preLoadings = calculateLoadings(weightsMask, finalScoreValues, normData.values);
+    adjustInteraction(constructs, mmMatrix, preLoadings, finalScores, obsData);
+  }
+  const outerLoadings = calculateLoadings(weightsMask, finalScoreValues, normData.values);
 
   const pathCoef = estimatePathCoef(smMatrix, finalScores, dependant, pathsMatrix);
 
