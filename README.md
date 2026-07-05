@@ -1,5 +1,7 @@
 # semints
 
+[![CI](https://github.com/sem-in-r/semints/actions/workflows/ci.yml/badge.svg)](https://github.com/sem-in-r/semints/actions/workflows/ci.yml)
+
 SEM (Structural Equation Modeling) estimation in TypeScript: PLS-SEM and
 covariance-based SEM (CBSEM/CFA).
 
