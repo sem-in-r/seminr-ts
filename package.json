@@ -31,6 +31,9 @@
     "typecheck": "tsc --noEmit",
     "typecheck:demos": "bun run build && tsc -p demos",
     "smoke:pack": "bun run scripts/smoke-pack.ts",
+    "check:parity": "bun run scripts/check-parity.ts",
+    "benchmark": "bun run benchmark/run.ts",
+    "demo": "bun run build && bun run demos/browser/serve.ts",
     "prepublishOnly": "bun run build && bun test"
   },
   "keywords": [

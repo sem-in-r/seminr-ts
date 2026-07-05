@@ -12,7 +12,7 @@ import { mobiCsvUrl } from "../lib/mobi.ts";
 const BUNDLE_ALIASES: Record<string, string> = {
   "app.js": "app.js",
   "worker.js": "worker.js",
-  "semints.js": "index.js",
+  "semints.js": "semints-entry.js",
   "demo-utils.js": "print.js",
 };
 
@@ -21,7 +21,7 @@ async function buildAssets(): Promise<Map<string, string>> {
     entrypoints: [
       Bun.fileURLToPath(new URL("./app.ts", import.meta.url)),
       Bun.fileURLToPath(new URL("../../src/workers/worker.ts", import.meta.url)),
-      Bun.fileURLToPath(new URL("../../src/index.ts", import.meta.url)),
+      Bun.fileURLToPath(new URL("./semints-entry.ts", import.meta.url)),
       Bun.fileURLToPath(new URL("../lib/print.ts", import.meta.url)),
     ],
     target: "browser",
@@ -40,11 +40,11 @@ async function buildAssets(): Promise<Map<string, string>> {
     if (code === undefined) throw new Error(`Missing bundle artifact ${artifact}`);
     assets.set(served, code);
   }
-  for (const snippet of ["snippet-pls.js", "snippet-cbsem.js"]) {
-    assets.set(snippet, await Bun.file(new URL(`./${snippet}`, import.meta.url)).text());
-  }
   return assets;
 }
+
+/** Editable example sources, re-read from disk on every request so edits show on reload. */
+const SNIPPETS = new Set(["snippet-pls.js", "snippet-cbsem.js"]);
 
 export async function createServer(port = 0) {
   const assets = await buildAssets();
@@ -57,7 +57,12 @@ export async function createServer(port = 0) {
       if (path === "/") {
         return new Response(indexHtml, { headers: { "content-type": "text/html; charset=utf-8" } });
       }
-      const asset = assets.get(path.slice(1));
+      const name = path.slice(1);
+      if (SNIPPETS.has(name)) {
+        const source = await Bun.file(new URL(`./${name}`, import.meta.url)).text();
+        return new Response(source, { headers: { "content-type": "text/javascript; charset=utf-8" } });
+      }
+      const asset = assets.get(name);
       if (asset !== undefined) {
         return new Response(asset, { headers: { "content-type": "text/javascript; charset=utf-8" } });
       }

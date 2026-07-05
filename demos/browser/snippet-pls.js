@@ -52,13 +52,17 @@ log(formatMatrix(model.pathCoef));
 log(heading("R-squared"));
 log(formatMatrix(model.rSquared));
 
-log(heading("Bootstrapping (200 replications across Web Workers)…"));
+const nboot = 200;
+const workers = Math.max(1, (navigator.hardwareConcurrency ?? 2) - 1);
+log(heading(`Bootstrapping (${nboot} replications across ${workers} Web Workers)…`));
+const t0 = performance.now();
 const boot = await bootstrapModelParallel({
   model,
-  nboot: 200,
+  nboot,
   seed: 123,
   createWorker: () => new Worker(`${location.origin}/worker.js`, { type: "module" }),
 });
-log(`${boot.boots} successful replications, ${boot.fails} failed.`);
+const seconds = (performance.now() - t0) / 1000;
+log(`${boot.boots} successful replications, ${boot.fails} failed — ${seconds.toFixed(2)} s (${Math.round(boot.boots / seconds)} boots/s).`);
 log(heading("Bootstrapped paths"));
 log(formatMatrix(boot.pathsDescriptives));

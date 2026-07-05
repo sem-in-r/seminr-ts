@@ -1,0 +1,4 @@
+# Machine-specific benchmark outputs — regenerate locally with `bun run benchmark/run.ts`.
+# The harness source (run.ts, reference-seminr.ts, README.md) IS committed.
+results/
+report.html
