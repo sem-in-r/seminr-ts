@@ -108,8 +108,19 @@ export function colCor(
   return crossColumns(a, b, true);
 }
 
-/** Per-column mean-centered values and sample SDs, computed once per matrix. */
-function columnStats(m: readonly (readonly number[])[]): { centered: number[][]; sds: number[] } {
+/** Mean-centered column arrays and their sample SDs, computed once per matrix. */
+export interface CenteredColumns {
+  centered: number[][];
+  sds: number[];
+  /** Row count of the source matrix. */
+  n: number;
+}
+
+/**
+ * Center every column and take its sample SD in one pass, for reuse across
+ * repeated cov/cor block computations (see {@link corFromCentered}).
+ */
+export function centerColumns(m: readonly (readonly number[])[]): CenteredColumns {
   const ncol = m[0]!.length;
   const centered: number[][] = new Array(ncol);
   const sds = new Array<number>(ncol);
@@ -125,43 +136,52 @@ function columnStats(m: readonly (readonly number[])[]): { centered: number[][];
     centered[j] = col;
     sds[j] = Math.sqrt(ss / (col.length - 1));
   }
-  return { centered, sds };
+  return { centered, sds, n: m.length };
 }
 
 /**
- * All-pairs cov/cor over the columns of a and b, with each column's mean/SD
- * computed once (the per-pair arithmetic — Σ(x−mx)(y−my)/(n−1), then
- * ÷(sd_x·sd_y) for correlations — is unchanged, so results are bit-identical
- * to the pairwise `cov`/`cor` calls). When a and b are the same object the
- * symmetric result is computed once per pair and mirrored.
+ * All-pairs cov/cor from precomputed column stats. The per-pair arithmetic —
+ * Σ(x−mx)(y−my)/(n−1), then ÷(sd_x·sd_y) for correlations — matches the
+ * pairwise `cov`/`cor` calls bit-for-bit. When a and b are the same object
+ * the symmetric result is computed once per pair and mirrored (commutative
+ * in fp).
  */
-function crossColumns(
-  a: readonly (readonly number[])[],
-  b: readonly (readonly number[])[],
-  correlate: boolean,
-): number[][] {
-  const n = a.length;
-  const statsA = columnStats(a);
+function crossFromCentered(a: CenteredColumns, b: CenteredColumns, correlate: boolean): number[][] {
+  const n = a.n;
   const symmetric = a === b;
-  const statsB = symmetric ? statsA : columnStats(b);
-  const na = statsA.centered.length;
-  const nb = statsB.centered.length;
+  const na = a.centered.length;
+  const nb = b.centered.length;
   const out: number[][] = new Array(na);
   for (let i = 0; i < na; i++) out[i] = new Array<number>(nb);
   for (let i = 0; i < na; i++) {
-    const ca = statsA.centered[i]!;
+    const ca = a.centered[i]!;
     const row = out[i]!;
     for (let j = symmetric ? i : 0; j < nb; j++) {
-      const cb = statsB.centered[j]!;
+      const cb = b.centered[j]!;
       let s = 0;
       for (let r = 0; r < n; r++) s += ca[r]! * cb[r]!;
       let v = s / (n - 1);
-      if (correlate) v = v / (statsA.sds[i]! * statsB.sds[j]!);
+      if (correlate) v = v / (a.sds[i]! * b.sds[j]!);
       row[j] = v;
       if (symmetric && j !== i) out[j]![i] = v;
     }
   }
   return out;
+}
+
+/** Column-wise cross-correlations from precomputed {@link centerColumns} stats. */
+export function corFromCentered(a: CenteredColumns, b: CenteredColumns): number[][] {
+  return crossFromCentered(a, b, true);
+}
+
+function crossColumns(
+  a: readonly (readonly number[])[],
+  b: readonly (readonly number[])[],
+  correlate: boolean,
+): number[][] {
+  const statsA = centerColumns(a);
+  const statsB = a === b ? statsA : centerColumns(b);
+  return crossFromCentered(statsA, statsB, correlate);
 }
 
 /** Quantile using R's default type-7 interpolation. */
