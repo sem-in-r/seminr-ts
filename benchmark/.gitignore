@@ -2,3 +2,4 @@
 # The harness source (run.ts, reference-seminr.ts, README.md) IS committed.
 results/
 report.html
+equivalence-baseline.json
