@@ -73,7 +73,7 @@ export function colCov(
   a: readonly (readonly number[])[],
   b: readonly (readonly number[])[],
 ): number[][] {
-  return crossColumns(a, b, cov);
+  return crossColumns(a, b, false);
 }
 
 /** Column-wise cross-correlation matrix, as R's `cor(a, b)`. */
@@ -81,23 +81,61 @@ export function colCor(
   a: readonly (readonly number[])[],
   b: readonly (readonly number[])[],
 ): number[][] {
-  return crossColumns(a, b, cor);
+  return crossColumns(a, b, true);
 }
 
+/** Per-column mean-centered values and sample SDs, computed once per matrix. */
+function columnStats(m: readonly (readonly number[])[]): { centered: number[][]; sds: number[] } {
+  const ncol = m[0]!.length;
+  const centered: number[][] = new Array(ncol);
+  const sds = new Array<number>(ncol);
+  for (let j = 0; j < ncol; j++) {
+    const col = column(m, j);
+    const mj = mean(col);
+    let ss = 0;
+    for (let i = 0; i < col.length; i++) {
+      const c = col[i]! - mj;
+      col[i] = c;
+      ss += c * c;
+    }
+    centered[j] = col;
+    sds[j] = Math.sqrt(ss / (col.length - 1));
+  }
+  return { centered, sds };
+}
+
+/**
+ * All-pairs cov/cor over the columns of a and b, with each column's mean/SD
+ * computed once (the per-pair arithmetic — Σ(x−mx)(y−my)/(n−1), then
+ * ÷(sd_x·sd_y) for correlations — is unchanged, so results are bit-identical
+ * to the pairwise `cov`/`cor` calls). When a and b are the same object the
+ * symmetric result is computed once per pair and mirrored.
+ */
 function crossColumns(
   a: readonly (readonly number[])[],
   b: readonly (readonly number[])[],
-  f: (x: readonly number[], y: readonly number[]) => number,
+  correlate: boolean,
 ): number[][] {
-  const na = a[0]!.length;
-  const nb = b[0]!.length;
-  const aCols = Array.from({ length: na }, (_, j) => column(a, j));
-  const bCols = Array.from({ length: nb }, (_, j) => column(b, j));
+  const n = a.length;
+  const statsA = columnStats(a);
+  const symmetric = a === b;
+  const statsB = symmetric ? statsA : columnStats(b);
+  const na = statsA.centered.length;
+  const nb = statsB.centered.length;
   const out: number[][] = new Array(na);
+  for (let i = 0; i < na; i++) out[i] = new Array<number>(nb);
   for (let i = 0; i < na; i++) {
-    const row = new Array<number>(nb);
-    for (let j = 0; j < nb; j++) row[j] = f(aCols[i]!, bCols[j]!);
-    out[i] = row;
+    const ca = statsA.centered[i]!;
+    const row = out[i]!;
+    for (let j = symmetric ? i : 0; j < nb; j++) {
+      const cb = statsB.centered[j]!;
+      let s = 0;
+      for (let r = 0; r < n; r++) s += ca[r]! * cb[r]!;
+      let v = s / (n - 1);
+      if (correlate) v = v / (statsA.sds[i]! * statsB.sds[j]!);
+      row[j] = v;
+      if (symmetric && j !== i) out[j]![i] = v;
+    }
   }
   return out;
 }
