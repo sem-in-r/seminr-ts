@@ -50,7 +50,7 @@ export interface MissingDataSummary {
 }
 
 export interface PlsSummary {
-  meta: { engine: "semints"; version: string };
+  meta: { engine: "seminr-ts"; version: string };
   iterations: number;
   paths: NamedMatrix;
   totalEffects: NamedMatrix;
@@ -124,7 +124,7 @@ export function reportMissing(model: PlsModel): MissingDataSummary {
 export function summarizePls(model: PlsModel): PlsSummary {
   const mc = constructsInModel(model);
   return {
-    meta: { engine: "semints", version },
+    meta: { engine: "seminr-ts", version },
     iterations: model.iterations,
     paths: reportPaths(model),
     totalEffects: totalEffects(model.pathCoef),

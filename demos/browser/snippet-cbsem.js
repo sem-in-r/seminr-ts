@@ -1,7 +1,7 @@
-// semints CBSEM/CFA example — edit freely and press Run.
+// seminr-ts CBSEM/CFA example — edit freely and press Run.
 //
-// This is plain JavaScript evaluated as an ES module: the "semints" and
-// "semints/demo-utils" imports are rewritten to the bundles this page serves.
+// This is plain JavaScript evaluated as an ES module: the "@seminr/core" and
+// "@seminr/core/demo-utils" imports are rewritten to the bundles this page serves.
 // Use absolute URLs (location.origin) for fetch — the code runs from a Blob
 // module, which cannot resolve path-absolute URLs.
 //
@@ -23,8 +23,8 @@ import {
   estimateCbsem,
   summarizeCfa,
   summarizeCbsem,
-} from "semints";
-import { heading, formatMatrix } from "semints/demo-utils";
+} from "@seminr/core";
+import { heading, formatMatrix } from "@seminr/core/demo-utils";
 
 const out = document.getElementById("out");
 out.textContent = "";

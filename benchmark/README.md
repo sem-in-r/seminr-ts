@@ -1,4 +1,4 @@
-# semints benchmarks
+# seminr-ts benchmarks
 
 Wall-clock benchmarks for the heavy PLS routines, structured to sit **head-to-head
 against seminr's own performance report** (`../seminr/.claude/_archive/PLAN.performance.report.html`,
@@ -20,10 +20,10 @@ Flags (defaults match seminr's report): `--reps 5`, `--nboot 200`, `--folds 10`,
 
 ## Outputs
 
-- **Console** — median seconds per routine, plus a `seminr ÷ semints` ratio column.
-- **`benchmark/report.html`** — the three-way comparison (semints vs seminr base
+- **Console** — median seconds per routine, plus a `seminr ÷ seminr-ts` ratio column.
+- **`benchmark/report.html`** — the three-way comparison (seminr-ts vs seminr base
   vs seminr opt) with per-routine speedup ratios. *Git-ignored* (machine-specific).
-- **`benchmark/results/semints-<commit>.json`** — raw medians. *Git-ignored.*
+- **`benchmark/results/seminr-ts-<commit>.json`** — raw medians. *Git-ignored.*
 
 Open the report with `open benchmark/report.html`.
 
@@ -40,7 +40,7 @@ Open the report with `open benchmark/report.html`.
   (`--capture` writes `equivalence-baseline.json`, git-ignored). Used by the
   `performance` branch to prove optimizations change no output bit.
 - `report-performance.ts` — before/after report generator: reads two
-  `results/semints-<commit>.json` files and renders
+  `results/seminr-ts-<commit>.json` files and renders
   `report-performance.html` (git-ignored; `--out` overrides) with
   per-routine speedups.
 

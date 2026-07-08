@@ -24,7 +24,7 @@ export interface ParallelBootstrapOptions extends BootstrapOptions {
    * Factory for worker instances. Defaults to spawning this package's shared
    * `workers/worker` module. Browser bundlers that emit the worker at a
    * different URL should pass their own factory, e.g.
-   * `() => new Worker(new URL("semints-worker.js", import.meta.url), { type: "module" })`.
+   * `() => new Worker(new URL("seminr-worker.js", import.meta.url), { type: "module" })`.
    */
   createWorker?: () => Worker;
 }

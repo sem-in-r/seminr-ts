@@ -1,4 +1,4 @@
-# Generate golden fixtures for semints CBSEM/CFA parity tests by running
+# Generate golden fixtures for seminr-ts CBSEM/CFA parity tests by running
 # seminr (R) + lavaan on the bundled mobi dataset.
 #
 # Usage:  Rscript scripts/generate-cbsem-fixtures.R
@@ -291,7 +291,7 @@ c4_variant <- function(method, method_name) {
 write_fixture("cbsem-C4_intxn_pi", c4_variant(product_indicator, "product_indicator"))
 write_fixture("cbsem-C4_intxn_2stage", c4_variant(two_stage, "two_stage"))
 # C6 — orthogonal variant of the same model (untested in seminr itself; this
-# fixture is the parity target that lets semints advertise it for CBSEM)
+# fixture is the parity target that lets seminr-ts advertise it for CBSEM)
 write_fixture("cbsem-C6_intxn_orthogonal", c4_variant(orthogonal, "orthogonal"))
 
 # First-stage CFA of the two-stage method (main-effects mm only) — the TS port

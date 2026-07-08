@@ -3,7 +3,7 @@
  *
  * Builds the package, packs it with `bun pm pack`, installs the tarball into a
  * scratch consumer project, and runs a consumer script that imports from
- * "semints" (the *installed* copy in node_modules, not the repo): estimates a
+ * "seminr" (the *installed* copy in node_modules, not the repo): estimates a
  * small PLS model, asserts a known path coefficient, then runs a parallel
  * bootstrap to prove the Web Worker resolves from the installed dist/.
  *
@@ -22,7 +22,7 @@ function run(cmd: string[], cwd: string): void {
   }
 }
 
-const workDir = mkdtempSync(join(tmpdir(), "semints-smoke-"));
+const workDir = mkdtempSync(join(tmpdir(), "seminr-smoke-"));
 try {
   console.log(`smoke: work dir ${workDir}`);
 
@@ -39,7 +39,7 @@ try {
   mkdirSync(consumerDir);
   writeFileSync(
     join(consumerDir, "package.json"),
-    JSON.stringify({ name: "semints-smoke-consumer", private: true, type: "module" }, null, 2),
+    JSON.stringify({ name: "seminr-smoke-consumer", private: true, type: "module" }, null, 2),
   );
   run(["bun", "add", join(workDir, tarball)], consumerDir);
 
@@ -57,7 +57,7 @@ try {
   rmSync(workDir, { recursive: true, force: true });
 }
 
-/** The consumer imports only from "semints" — the installed node_modules copy. */
+/** The consumer imports only from "@seminr/core" — the installed node_modules copy. */
 function consumerScript(): string {
   return `
 import {
@@ -70,7 +70,7 @@ import {
   bootstrapModelParallel,
   parseCsv,
   nmGet,
-} from "semints";
+} from "@seminr/core";
 
 const mobi = parseCsv(await Bun.file(new URL("./mobi.csv", import.meta.url)).text());
 
@@ -89,7 +89,7 @@ if (Math.abs(imagePath - expected) > 1e-6) {
 }
 console.log(\`consumer: estimatePls OK (Image->Satisfaction = \${imagePath.toFixed(6)})\`);
 
-// Worker must resolve from node_modules/semints/dist/workers/worker.js
+// Worker must resolve from node_modules/@seminr/core/dist/workers/worker.js
 const boot = await bootstrapModelParallel({ model, nboot: 20, seed: 123 });
 if (boot.boots !== 20) throw new Error(\`Expected 20 boots, got \${boot.boots}\`);
 const bootSd = nmGet(boot.pathsDescriptives, "Image", "Satisfaction Boot SD");

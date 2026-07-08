@@ -1,4 +1,4 @@
-# semints — needed / potential follow-ups
+# seminr-ts — needed / potential follow-ups
 
 > Deferred work and known gaps vs seminr. Full parity reassessment vs seminr's NAMESPACE done 2026-07-04; every non-plotting exported feature shipped as of branch `parity` (`.claude/plans/PLAN.parity.md`) — what remains below is deliberately deferred or out of scope. Update this file when an item ships or a new deferral is decided.
 
@@ -22,13 +22,13 @@
 
 ## Out of scope (both estimators) — will have to get done eventually
 
-1. **Plotting / presentation layer** — `dot_graph*`, themes (`seminr_theme_*`), `plot_htmt`, `plot_scores`, `plot_interaction` + `slope_analysis` (R-graphics simple-slopes plot), `save_plot`/`browse_plot`, and the `print.summary.*` console formatters. semints returns data objects; rendering belongs in a separate visualization package if ever.
+1. **Plotting / presentation layer** — `dot_graph*`, themes (`seminr_theme_*`), `plot_htmt`, `plot_scores`, `plot_interaction` + `slope_analysis` (R-graphics simple-slopes plot), `save_plot`/`browse_plot`, and the `print.summary.*` console formatters. seminr-ts returns data objects; rendering belongs in a separate visualization package if ever.
 2. **npm packaging / publishing** — checks before first release: package-name availability, LICENSE (seminr is MIT-compatible — verify attribution requirements for derived work), `files`/`exports` review, README install instructions.
 
 ## CBSEM technical debt / notes
 
 - Parity tolerances are bounded by optimizer stopping error in double precision (plan Q7): fixtures use BFGS-polished lavaan optima; ridge-dominated matrices compare at mean-rel 5e-5. If fixtures are ever regenerated, keep the `optim.method="BFGS", control=list(reltol=1e-15)` override or the CBSEM parity tests will drift.
-- `estimate_cfa` on the full C3 ECSI measurement model fails in seminr itself (non-PD latent covariance post-check) — not a semints bug; documented in plan Q5.
+- `estimate_cfa` on the full C3 ECSI measurement model fails in seminr itself (non-PD latent covariance post-check) — not a seminr-ts bug; documented in plan Q5.
 - Fixture quirk: R `NA` cells serialize as the string `"NA"` in fixture JSON; comparator handles it (`tests/cbsem/helpers.ts`).
 
 ## Process notes

@@ -1,4 +1,4 @@
-# Generate golden fixtures for semints parity tests by running seminr (R) on
+# Generate golden fixtures for seminr-ts parity tests by running seminr (R) on
 # the bundled mobi dataset.
 #
 # Usage:  Rscript scripts/generate-fixtures.R

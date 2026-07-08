@@ -14,7 +14,7 @@ import {
   paths,
   estimatePls,
   type SMMatrix,
-} from "semints";
+} from "@seminr/core";
 import { loadMobi } from "./lib/mobi.ts";
 import { heading, formatMatrix } from "./lib/print.ts";
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * semints performance benchmark — mirrors seminr's `bench/benchmark.R` scenario
+ * seminr-ts performance benchmark — mirrors seminr's `bench/benchmark.R` scenario
  * for scenario, so the TS port can be compared head-to-head against seminr's
  * baseline (`develop`) and optimized (`performance` branch) timings.
  *
@@ -20,7 +20,7 @@
  *   --no-report  skip writing benchmark/report.html
  *
  * Outputs:
- *   benchmark/results/semints-<commit>.json   raw medians (git-ignored)
+ *   benchmark/results/seminr-ts-<commit>.json   raw medians (git-ignored)
  *   benchmark/report.html                     three-way comparison vs seminr
  *
  * This is a dev harness; it may use Bun APIs (Bun.gc, Bun.file, $). It measures
@@ -210,7 +210,7 @@ async function bench(
 // ---------------------------------------------------------------------------
 
 console.log("=".repeat(70));
-console.log("semints Performance Benchmark");
+console.log("seminr-ts Performance Benchmark");
 console.log("=".repeat(70));
 console.log(`  Runtime:    Bun ${Bun.version} (${process.platform}/${process.arch})`);
 console.log(`  CPUs:       ${navigator.hardwareConcurrency}`);
@@ -273,9 +273,9 @@ const env = {
 };
 
 console.log("\n" + "=".repeat(70));
-console.log("COMPARISON vs seminr (seconds; ratio = seminr ÷ semints)");
+console.log("COMPARISON vs seminr (seconds; ratio = seminr ÷ seminr-ts)");
 console.log("=".repeat(70));
-console.log(`  ${"Scenario".padEnd(34)}${"semints".padStart(9)}${"sr-base".padStart(9)}${"sr-opt".padStart(9)}  vs base`);
+console.log(`  ${"Scenario".padEnd(34)}${"seminr-ts".padStart(9)}${"sr-base".padStart(9)}${"sr-opt".padStart(9)}  vs base`);
 console.log("-".repeat(70));
 for (const r of results) {
   const ref = SEMINR_REFERENCE[r.key];
@@ -292,9 +292,9 @@ for (const r of results) {
 
 const payload = { env, opts, seminrEnv: SEMINR_ENV, results };
 await $`mkdir -p ${repoRoot}benchmark/results`.quiet();
-const outPath = `${repoRoot}benchmark/results/semints-${env.commit}.json`;
+const outPath = `${repoRoot}benchmark/results/seminr-ts-${env.commit}.json`;
 await Bun.write(outPath, JSON.stringify(payload, null, 2));
-console.log(`\nRaw results → benchmark/results/semints-${env.commit}.json`);
+console.log(`\nRaw results → benchmark/results/seminr-ts-${env.commit}.json`);
 
 // ---------------------------------------------------------------------------
 // HTML report
@@ -337,7 +337,7 @@ function renderReport(p: Payload): string {
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>semints performance — vs seminr</title>
+<title>seminr-ts performance — vs seminr</title>
 <style>
   body { font-family: -apple-system, "Segoe UI", sans-serif; max-width: 68rem; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; line-height: 1.5; }
   h1 { font-size: 1.5rem; border-bottom: 2px solid #ccc; padding-bottom: .4rem; }
@@ -354,15 +354,15 @@ function renderReport(p: Payload): string {
 </style>
 </head>
 <body>
-<h1>semints performance — head-to-head with seminr</h1>
-<p class="meta">Generated ${escapeHtml(p.env.timestamp)} · semints @ <code>${escapeHtml(p.env.commit)}</code> on ${escapeHtml(p.env.runtime)} (${escapeHtml(p.env.platform)}, ${p.env.cpus} CPUs).</p>
+<h1>seminr-ts performance — head-to-head with seminr</h1>
+<p class="meta">Generated ${escapeHtml(p.env.timestamp)} · seminr-ts @ <code>${escapeHtml(p.env.commit)}</code> on ${escapeHtml(p.env.runtime)} (${escapeHtml(p.env.platform)}, ${p.env.cpus} CPUs).</p>
 
-<p>Each row runs the <strong>same scenario</strong> that seminr's own performance report measures (<code>../seminr/bench/benchmark.R</code>), so the TS port's wall-clock lands directly beside seminr's R timings. <strong>sr-base</strong> = seminr <code>develop</code> (pre-optimization); <strong>sr-opt</strong> = seminr <code>performance</code> branch (optimized, bit-identical). Ratios are <code>seminr ÷ semints</code> — “×2.0 faster” means semints took half the time.</p>
+<p>Each row runs the <strong>same scenario</strong> that seminr's own performance report measures (<code>../seminr/bench/benchmark.R</code>), so the TS port's wall-clock lands directly beside seminr's R timings. <strong>sr-base</strong> = seminr <code>develop</code> (pre-optimization); <strong>sr-opt</strong> = seminr <code>performance</code> branch (optimized, bit-identical). Ratios are <code>seminr ÷ seminr-ts</code> — “×2.0 faster” means seminr-ts took half the time.</p>
 
 <h2>Environment</h2>
 <table>
   <tbody>
-    <tr><th>semints</th><td>${escapeHtml(p.env.runtime)} · ${escapeHtml(p.env.platform)} · ${p.env.cpus} CPUs · commit <code>${escapeHtml(p.env.commit)}</code></td></tr>
+    <tr><th>seminr-ts</th><td>${escapeHtml(p.env.runtime)} · ${escapeHtml(p.env.platform)} · ${p.env.cpus} CPUs · commit <code>${escapeHtml(p.env.commit)}</code></td></tr>
     <tr><th>seminr</th><td>${escapeHtml(p.seminrEnv.machine)} · ${escapeHtml(p.seminrEnv.os)} · ${escapeHtml(p.seminrEnv.runtime)}</td></tr>
     <tr><th>seminr baseline</th><td><code>${escapeHtml(p.seminrEnv.baselineCommit)}</code></td></tr>
     <tr><th>seminr optimized</th><td>${escapeHtml(p.seminrEnv.optimizedRef)}</td></tr>
@@ -375,7 +375,7 @@ function renderReport(p: Payload): string {
   <thead>
     <tr>
       <th>Routine</th><th>Scenario</th>
-      <th class="num">semints (s)</th>
+      <th class="num">seminr-ts (s)</th>
       <th class="num">seminr base (s)</th>
       <th class="num">seminr opt (s)</th>
       <th class="num">vs base</th>
@@ -391,7 +391,7 @@ ${rows}
 <ul>
   <li><strong>Cross-runtime, not cross-branch.</strong> This compares a TypeScript/Bun implementation against an R implementation. Differences reflect both algorithmic work <em>and</em> runtime (JIT-compiled JS vs interpreted R with compiled BLAS). It is an honest “how fast is the port for a user,” not a controlled language-neutral benchmark.</li>
   <li><strong>Hardware is comparable but not pinned.</strong> seminr's numbers are from an Apple M1 Pro; run this on the same class of machine for the ratios to mean what they look like. The environment table records exactly what each side ran on.</li>
-  <li><strong>Parallel scenario differs in mechanism.</strong> semints uses Web Workers (<code>workers=2</code>); seminr uses a 2-core PSOCK cluster. Both pay a spawn/serialization cost; small-N parallel can be slower than sequential on either side.</li>
+  <li><strong>Parallel scenario differs in mechanism.</strong> seminr-ts uses Web Workers (<code>workers=2</code>); seminr uses a 2-core PSOCK cluster. Both pay a spawn/serialization cost; small-N parallel can be slower than sequential on either side.</li>
   <li><strong>Sub-10&nbsp;ms rows are noisy.</strong> The single-estimation scenarios quantize near timer/JIT resolution; treat their ratios as order-of-magnitude, not precise.</li>
   <li><strong>Large-N data isn't byte-identical.</strong> The synthetic ${p.opts.largeN}-row set is regenerated in TS (seeded resample + Gaussian noise) with the same shape as seminr's, but different values — iteration counts can differ slightly.</li>
   <li><strong>Medians only.</strong> No parity assertion here; correctness is enforced separately by the golden-fixture suite (<code>bun test</code>) and <code>bun run check:parity</code>.</li>

@@ -244,7 +244,7 @@ if (!significant && totalWithin === 0) {
 } else {
   console.log(`● Parity moved: ${totalBeyond} cell(s) beyond ${TOL}, ${totalStructural} structural change(s).`);
   console.log("  This is the case worth investigating BEFORE committing:");
-  console.log("    • run `bun test` — if it fails, semints no longer matches seminr (real divergence).");
+  console.log("    • run `bun test` — if it fails, seminr-ts no longer matches seminr (real divergence).");
   console.log("    • if tests pass, our code already tracks the new numbers; review the diff and commit.");
   console.log(`  Files: ${changedFiles.join(", ")}`);
 }

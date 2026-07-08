@@ -1,16 +1,16 @@
-# semints
+# seminr-ts
 
-[![CI](https://github.com/sem-in-r/semints/actions/workflows/ci.yml/badge.svg)](https://github.com/sem-in-r/semints/actions/workflows/ci.yml)
+[![CI](https://github.com/sem-in-r/seminr-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/sem-in-r/seminr-ts/actions/workflows/ci.yml)
 
 SEM (Structural Equation Modeling) estimation in TypeScript: PLS-SEM and
 covariance-based SEM (CBSEM/CFA).
 
-`semints` is a port of the modeling and estimation core of the
+`seminr-ts` is a port of the modeling and estimation core of the
 [seminr](https://github.com/sem-in-r/seminr) R package: model specification DSL,
 the simplePLS estimation algorithm, PLSc consistency correction, bootstrapping,
 interaction terms, higher-order constructs, and covariance-based estimation
 (CFA and full CBSEM). Where seminr delegates covariance-based estimation to
-[lavaan](https://lavaan.ugent.be), semints implements the maximum-likelihood
+[lavaan](https://lavaan.ugent.be), seminr-ts implements the maximum-likelihood
 estimator itself (LISREL matrices, analytic gradient, BFGS) and matches
 lavaan's output.
 
@@ -19,11 +19,11 @@ It serves two kinds of users:
 - **Data analysts** who want to run a complete SEM analysis — specify, estimate,
   assess, bootstrap, predict — in a modern scripting runtime (Bun, Node, or a
   notebook that runs TypeScript) instead of R. Start at
-  [Analyzing data with semints](#analyzing-data-with-semints).
+  [Analyzing data with seminr-ts](#analyzing-data-with-seminr-ts).
 - **Developers** embedding SEM estimation in a product — a dashboard, a survey
   platform, a browser tool. The library is zero-dependency, runtime-agnostic
   ESM with TypeScript types. Start at
-  [Integrating semints into a product](#integrating-semints-into-a-product).
+  [Integrating seminr-ts into a product](#integrating-seminr-ts-into-a-product).
 
 ## Status
 
@@ -48,15 +48,18 @@ golden fixtures are generated from the R implementation.
 - Missing data is handled by `meanReplacement` (default) or `naOmit`, matching
   seminr's `missing` argument.
 
-## Analyzing data with semints
+## Analyzing data with seminr-ts
 
 ### Install
 
 ```sh
-bun add semints    # or: npm install semints
+bun add @seminr/core    # or: npm install @seminr/core
 ```
 
-(Until the first npm release, install from a checkout: `bun add /path/to/semints`.)
+The npm package is named `@seminr/core`; the project and its repository are `seminr-ts`
+(the TypeScript port of the [seminr](https://github.com/sem-in-r/seminr) R package).
+
+(Until the first npm release, install from a checkout: `bun add /path/to/seminr-ts`.)
 
 ### A complete PLS analysis
 
@@ -70,7 +73,7 @@ import {
   relationships, paths,
   estimatePls, summarizePls,
   bootstrapModel, summarizePlsBoot,
-} from "semints";
+} from "@seminr/core";
 
 // 1. Load data — any way of obtaining CSV text works
 const data = parseCsv(await Bun.file("mobi.csv").text());       // Bun
@@ -123,7 +126,7 @@ LM benchmark), `estimatePlsMga` (multi-group analysis), and mediation helpers
 
 The API deliberately mirrors seminr; the correspondence is mechanical:
 
-| seminr (R) | semints (TypeScript) |
+| seminr (R) | seminr-ts (TypeScript) |
 | --- | --- |
 | `mobi <- read.csv("mobi.csv")` | `const mobi = parseCsv(csvText)` |
 | `multi_items("IMAG", 1:5)` | `multiItems("IMAG", [1, 2, 3, 4, 5])` |
@@ -152,7 +155,7 @@ paths(["Image", "Expectation"], "Satisfaction"); // same result
 
 One deliberate difference: seminr's `summary()` printout becomes structured
 data here (see "Reading the output" above), and bootstrap seeds are
-deterministic within semints but do not reproduce R's random stream — see
+deterministic within seminr-ts but do not reproduce R's random stream — see
 [Bootstrap reproducibility](#bootstrap-reproducibility).
 
 ### Covariance-based SEM (CBSEM / CFA)
@@ -167,7 +170,7 @@ import {
   constructs, reflective, multiItems, singleItem,
   relationships, paths, associations, itemErrors,
   estimateCfa, estimateCbsem, summarizeCbsem, nmGet,
-} from "semints";
+} from "@seminr/core";
 
 const mm = constructs(
   reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
@@ -203,7 +206,7 @@ This example runs as a test in `tests/readme-example.test.ts`. CBSEM
 interactions support the `productIndicator` and `twoStage` methods, and
 second-order factors are specified with `higherReflective(name, dimensions)`.
 
-## Integrating semints into a product
+## Integrating seminr-ts into a product
 
 ### Data contract
 
@@ -233,7 +236,7 @@ and return results identical to their sequential counterparts for the same
 seed or indices:
 
 ```ts
-import { bootstrapModelParallel } from "semints";
+import { bootstrapModelParallel } from "@seminr/core";
 
 const boot = await bootstrapModelParallel(model, { nboot: 500, seed: 123 });
 // options: workers (default: hardwareConcurrency - 1), plus everything
@@ -255,7 +258,7 @@ const boot = await bootstrapModelParallel(model, {
 });
 ```
 
-(The shared worker entry is `semints/dist/workers/worker.js`; bundle it with
+(The shared worker entry is `@seminr/core/dist/workers/worker.js`; bundle it with
 `--target browser` for web use — the browser demo's `serve.ts` shows a working
 setup.) Two serialization limits apply across the worker boundary: interaction
 terms must use the builtin methods (`productIndicator`, `orthogonal`,
@@ -278,9 +281,9 @@ are additive or fixes only. Pin a minor range (`~0.1`) if you need stability.
 
 ### License obligations
 
-semints is licensed **GPL-3.0** (it is a derivative port of the GPL-3 seminr).
+seminr-ts is licensed **GPL-3.0** (it is a derivative port of the GPL-3 seminr).
 GPL-3 is a copyleft license: distributing a product that bundles or links
-semints — including serving a bundled browser app — carries GPL-3 obligations
+seminr-ts — including serving a bundled browser app — carries GPL-3 obligations
 for that product's code. Check GPL-3 compatibility with your licensing before
 shipping it in a closed-source product; using it server-side or internally,
 or for your own analyses, imposes nothing.
@@ -288,7 +291,7 @@ or for your own analyses, imposes nothing.
 ## Demos
 
 Runnable examples (mirroring seminr's `demo/` scripts) live in `demos/`. They
-consume the built package — they import `"semints"` exactly as an installed
+consume the built package — they import `"@seminr/core"` exactly as an installed
 consumer would — so build first:
 
 ```sh
@@ -308,7 +311,7 @@ All demos are exercised by `tests/demos.test.ts`.
 ## Bootstrap reproducibility
 
 `bootstrapModel(model, { nboot, seed })` is deterministic for a given seed
-**within semints** (mulberry32 PRNG), but does not reproduce R's random number
+**within seminr-ts** (mulberry32 PRNG), but does not reproduce R's random number
 stream. For exact numerical agreement with a seminr bootstrap, pass the exact
 resample indices R used via `{ indices }` (0-based row indices, one array per
 replication) — R's indices for `seed` are re-derivable as
@@ -319,7 +322,7 @@ The parity test suite does exactly this.
 
 The algorithms, API design, and test fixtures derive from
 [seminr](https://github.com/sem-in-r/seminr) by Soumya Ray, Nicholas Danks, and
-contributors. semints is licensed under the
+contributors. seminr-ts is licensed under the
 [GNU General Public License v3.0](LICENSE), matching seminr.
 
 ## Development

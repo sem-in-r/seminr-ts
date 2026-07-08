@@ -14,7 +14,7 @@ import {
   estimatePls,
   bootstrapModelParallel,
   bootTValues,
-} from "semints";
+} from "@seminr/core";
 import { loadMobi } from "./lib/mobi.ts";
 import { heading, formatMatrix } from "./lib/print.ts";
 

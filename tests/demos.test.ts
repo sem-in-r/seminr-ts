@@ -7,7 +7,7 @@ import { describe, it, expect, beforeAll } from "bun:test";
 
 const repoRoot = Bun.fileURLToPath(new URL("..", import.meta.url));
 
-// Demos consume the built package via the "semints" self-reference, so a
+// Demos consume the built package via the "@seminr/core" self-reference, so a
 // fresh (or stale) dist/ must be built before they can run.
 beforeAll(() => {
   const proc = Bun.spawnSync(["bun", "run", "build"], { cwd: repoRoot });
@@ -108,7 +108,7 @@ describe("browser demo server", () => {
       const page = await fetch(`${base}/`);
       expect(page.status).toBe(200);
       const pageHtml = await page.text();
-      expect(pageHtml).toContain("semints");
+      expect(pageHtml).toContain("seminr");
       // interactive mode (plan cbsem-robust Slice 4): editable code + Run,
       // plus a picker that repopulates the box with either example (4.4)
       expect(pageHtml).toContain('id="code"');
@@ -122,24 +122,24 @@ describe("browser demo server", () => {
 
       // The demo sources served for the textarea: one PLS example, one
       // CFA/CBSEM example incl. robust (MLR) fit columns, both importing the
-      // bare "semints" specifier.
+      // bare "@seminr/core" specifier.
       const pls = await fetch(`${base}/snippet-pls.js`);
       expect(pls.status).toBe(200);
       const plsCode = await pls.text();
-      expect(plsCode).toContain('from "semints"');
+      expect(plsCode).toContain('from "@seminr/core"');
       expect(plsCode).toContain("estimatePls");
       expect(plsCode).toContain("bootstrapModelParallel");
 
       const cbsem = await fetch(`${base}/snippet-cbsem.js`);
       expect(cbsem.status).toBe(200);
       const cbsemCode = await cbsem.text();
-      expect(cbsemCode).toContain('from "semints"');
+      expect(cbsemCode).toContain('from "@seminr/core"');
       expect(cbsemCode).toContain("Confirmatory Factor Analysis");
       expect(cbsemCode).toContain("CBSEM with Image x Expectation interaction");
       expect(cbsemCode).toContain("chisq.scaled");
 
       // Library + demo-utils bundles the snippet's rewritten imports resolve to
-      const lib = await fetch(`${base}/semints.js`);
+      const lib = await fetch(`${base}/seminr.js`);
       expect(lib.status).toBe(200);
       expect(await lib.text()).toContain("estimateCbsem");
       const utils = await fetch(`${base}/demo-utils.js`);
