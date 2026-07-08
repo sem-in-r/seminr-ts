@@ -1,6 +1,6 @@
 /**
  * Dev server for the browser demo. Bundles the runner (app.ts), the shared
- * worker, the library (served as /semints.js), and the print helpers (served
+ * worker, the library (served as /seminr.js), and the print helpers (served
  * as /demo-utils.js) for the browser target on startup, then serves them with
  * the page, the editable example sources (snippet-*.js), and the mobi dataset.
  *
@@ -12,7 +12,7 @@ import { mobiCsvUrl } from "../lib/mobi.ts";
 const BUNDLE_ALIASES: Record<string, string> = {
   "app.js": "app.js",
   "worker.js": "worker.js",
-  "semints.js": "semints-entry.js",
+  "seminr.js": "seminr-entry.js",
   "demo-utils.js": "print.js",
 };
 
@@ -21,7 +21,7 @@ async function buildAssets(): Promise<Map<string, string>> {
     entrypoints: [
       Bun.fileURLToPath(new URL("./app.ts", import.meta.url)),
       Bun.fileURLToPath(new URL("../../src/workers/worker.ts", import.meta.url)),
-      Bun.fileURLToPath(new URL("./semints-entry.ts", import.meta.url)),
+      Bun.fileURLToPath(new URL("./seminr-entry.ts", import.meta.url)),
       Bun.fileURLToPath(new URL("../lib/print.ts", import.meta.url)),
     ],
     target: "browser",
@@ -78,5 +78,5 @@ export async function createServer(port = 0) {
 
 if (import.meta.main) {
   const server = await createServer(3456);
-  console.log(`semints browser demo: http://localhost:${server.port}`);
+  console.log(`seminr-ts browser demo: http://localhost:${server.port}`);
 }

@@ -1,15 +1,15 @@
 {
-  "name": "semints",
+  "name": "seminr",
   "version": "0.1.1",
   "description": "SEM (Structural Equation Modeling) estimation in TypeScript — PLS-SEM and covariance-based SEM (CBSEM/CFA), ported from the seminr R package",
   "author": "Soumya Ray",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sem-in-r/semints.git"
+    "url": "git+https://github.com/sem-in-r/seminr-ts.git"
   },
-  "homepage": "https://github.com/sem-in-r/semints#readme",
+  "homepage": "https://github.com/sem-in-r/seminr-ts#readme",
   "bugs": {
-    "url": "https://github.com/sem-in-r/semints/issues"
+    "url": "https://github.com/sem-in-r/seminr-ts/issues"
   },
   "type": "module",
   "sideEffects": false,

@@ -14,7 +14,7 @@ import {
   paths,
   estimatePls,
   rhoA,
-} from "semints";
+} from "seminr";
 import { loadMobi } from "./lib/mobi.ts";
 import { heading, formatMatrix } from "./lib/print.ts";
 

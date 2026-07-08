@@ -11,7 +11,7 @@ import {
   type PlsBootSummary,
   type PlsPredictSummary,
   type PlsMgaPath,
-} from "semints";
+} from "seminr";
 
 export function heading(title: string): string {
   return `\n== ${title} ==`;

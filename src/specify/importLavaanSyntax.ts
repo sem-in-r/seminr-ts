@@ -74,7 +74,7 @@ function groupByConstruct(statements: readonly Statement[]): Map<string, string[
 
 /**
  * Convert lavaan syntax for composite models (as used by the cSEM package)
- * into a semints model specification, as seminr's `csem2seminr()`.
+ * into a seminr-ts model specification, as seminr's `csem2seminr()`.
  */
 export function csem2seminr(lavSyntax: string): SpecifiedModel {
   const statements = toStatements(lavSyntax);

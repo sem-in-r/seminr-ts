@@ -1,5 +1,5 @@
 /**
- * semints — PLS-SEM estimation in TypeScript, ported from the seminr R package.
+ * seminr-ts — PLS-SEM estimation in TypeScript, ported from the seminr R package.
  *
  * Typical usage: specify a measurement model with {@link constructs} and a
  * structural model with {@link relationships}, estimate with

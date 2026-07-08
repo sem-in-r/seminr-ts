@@ -1,4 +1,4 @@
-# semints
+# seminr-ts
 
 TypeScript implementation of SEM (Structural Equation Modeling) estimation — PLS-SEM and covariance-based SEM (CBSEM/CFA) — ported from the [seminr](https://github.com/sem-in-r/seminr) R package (sibling repo at `../seminr/`).
 

@@ -9,8 +9,8 @@
  *   baseline: develop @ b9410fe (seminr 2.5.0.9000)
  *   after   : performance branch (bit-identical outputs)
  *
- * `benchmark/run.ts` reproduces the SAME scenarios with semints on Bun and puts
- * these three numbers (seminr baseline, seminr optimized, semints) side by side.
+ * `benchmark/run.ts` reproduces the SAME scenarios with seminr-ts on Bun and puts
+ * these three numbers (seminr baseline, seminr optimized, seminr-ts) side by side.
  * The scenario keys must stay in sync with the SCENARIOS list in run.ts.
  */
 

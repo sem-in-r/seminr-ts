@@ -2,7 +2,7 @@
  * Browser demo runner: loads the selected example (PLS or CBSEM) into an
  * editable textarea, auto-runs it on page load, and re-runs it on demand.
  * Snippets are evaluated as Blob ES modules after rewriting their bare
- * "semints" / "semints/demo-utils" imports to the bundles served by serve.ts
+ * "seminr" / "seminr/demo-utils" imports to the bundles served by serve.ts
  * — so what you see in the box is exactly the code that runs.
  */
 
@@ -25,8 +25,8 @@ async function run(): Promise<void> {
   runButton.disabled = true;
   out.textContent = "running…";
   const code = codeBox.value
-    .replaceAll('from "semints/demo-utils"', `from "${location.origin}/demo-utils.js"`)
-    .replaceAll('from "semints"', `from "${location.origin}/semints.js"`);
+    .replaceAll('from "seminr/demo-utils"', `from "${location.origin}/demo-utils.js"`)
+    .replaceAll('from "seminr"', `from "${location.origin}/seminr.js"`);
   const moduleUrl = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
   try {
     await import(moduleUrl);

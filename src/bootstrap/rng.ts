@@ -2,7 +2,7 @@
 
 /**
  * mulberry32: fast 32-bit seedable PRNG returning floats in [0, 1).
- * Deterministic within semints; NOT identical to R's Mersenne-Twister —
+ * Deterministic within seminr-ts; NOT identical to R's Mersenne-Twister —
  * exact R parity requires injecting an index matrix (see bootstrapModel).
  */
 export function mulberry32(seed: number): () => number {

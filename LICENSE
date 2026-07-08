@@ -1,4 +1,4 @@
-semints — SEM (PLS-SEM and CBSEM/CFA) estimation in TypeScript,
+seminr-ts — SEM (PLS-SEM and CBSEM/CFA) estimation in TypeScript,
 ported from the seminr R package.
 Copyright (C) 2026 Soumya Ray
 

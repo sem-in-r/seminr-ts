@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Before/after report for the `performance` branch — the semints analog of
+ * Before/after report for the `performance` branch — the seminr-ts analog of
  * seminr's archived performance report (PR #419). Reads two raw-results files
  * produced by `benchmark/run.ts` (they are keyed by commit) and renders a
  * self-contained HTML comparison with per-routine speedups, alongside seminr's
@@ -44,7 +44,7 @@ const afterCommit =
   argValue("--after") ?? (await $`git -C ${repoRoot} rev-parse --short HEAD`.quiet().text()).trim();
 
 async function load(commit: string): Promise<Payload> {
-  const path = `${repoRoot}benchmark/results/semints-${commit}.json`;
+  const path = `${repoRoot}benchmark/results/seminr-ts-${commit}.json`;
   const file = Bun.file(path);
   if (!(await file.exists())) {
     console.error(`No results for ${commit} — run \`bun run benchmark/run.ts\` at that commit first (${path}).`);
@@ -109,7 +109,7 @@ const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>semints performance branch — before/after</title>
+<title>seminr-ts performance branch — before/after</title>
 <style>
   body { font-family: -apple-system, "Segoe UI", sans-serif; max-width: 68rem; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; line-height: 1.5; }
   h1 { font-size: 1.5rem; border-bottom: 2px solid #ccc; padding-bottom: .4rem; }
@@ -128,7 +128,7 @@ const html = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-<h1>semints performance branch — before/after</h1>
+<h1>seminr-ts performance branch — before/after</h1>
 <p class="meta">Generated ${esc(after.env.timestamp)} · baseline <code>${esc(baselineCommit)}</code> vs optimized <code>${esc(afterCommit)}</code> · ${esc(after.env.runtime)} (${esc(after.env.platform)}, ${after.env.cpus} CPUs).</p>
 
 <p>Same discipline as seminr's performance branch (PR #419): every change is a pure
@@ -170,7 +170,7 @@ revisit only if matmul dominates a future profile).</p>
 <h2>Environment</h2>
 <table>
   <tbody>
-    <tr><th>semints</th><td>${esc(after.env.runtime)} · ${esc(after.env.platform)} · ${after.env.cpus} CPUs</td></tr>
+    <tr><th>seminr-ts</th><td>${esc(after.env.runtime)} · ${esc(after.env.platform)} · ${after.env.cpus} CPUs</td></tr>
     <tr><th>baseline commit</th><td><code>${esc(baselineCommit)}</code> (branch cut from main)</td></tr>
     <tr><th>optimized commit</th><td><code>${esc(afterCommit)}</code></td></tr>
     <tr><th>seminr reference</th><td>${esc(SEMINR_ENV.machine)} · ${esc(SEMINR_ENV.runtime)} · base ${esc(SEMINR_ENV.baselineCommit)}, opt ${esc(SEMINR_ENV.optimizedRef)}</td></tr>
