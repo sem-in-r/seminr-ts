@@ -57,7 +57,7 @@ try {
   rmSync(workDir, { recursive: true, force: true });
 }
 
-/** The consumer imports only from "seminr" — the installed node_modules copy. */
+/** The consumer imports only from "@seminr/core" — the installed node_modules copy. */
 function consumerScript(): string {
   return `
 import {
@@ -70,7 +70,7 @@ import {
   bootstrapModelParallel,
   parseCsv,
   nmGet,
-} from "seminr";
+} from "@seminr/core";
 
 const mobi = parseCsv(await Bun.file(new URL("./mobi.csv", import.meta.url)).text());
 
@@ -89,7 +89,7 @@ if (Math.abs(imagePath - expected) > 1e-6) {
 }
 console.log(\`consumer: estimatePls OK (Image->Satisfaction = \${imagePath.toFixed(6)})\`);
 
-// Worker must resolve from node_modules/seminr/dist/workers/worker.js
+// Worker must resolve from node_modules/@seminr/core/dist/workers/worker.js
 const boot = await bootstrapModelParallel({ model, nboot: 20, seed: 123 });
 if (boot.boots !== 20) throw new Error(\`Expected 20 boots, got \${boot.boots}\`);
 const bootSd = nmGet(boot.pathsDescriptives, "Image", "Satisfaction Boot SD");

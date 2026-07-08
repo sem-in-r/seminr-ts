@@ -14,7 +14,7 @@ import {
   relationships,
   paths,
   estimatePls,
-} from "seminr";
+} from "@seminr/core";
 import { loadMobi } from "./lib/mobi.ts";
 import { heading, formatMatrix } from "./lib/print.ts";
 

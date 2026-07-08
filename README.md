@@ -53,10 +53,10 @@ golden fixtures are generated from the R implementation.
 ### Install
 
 ```sh
-bun add seminr    # or: npm install seminr
+bun add @seminr/core    # or: npm install @seminr/core
 ```
 
-The npm package is named `seminr`; the project and its repository are `seminr-ts`
+The npm package is named `@seminr/core`; the project and its repository are `seminr-ts`
 (the TypeScript port of the [seminr](https://github.com/sem-in-r/seminr) R package).
 
 (Until the first npm release, install from a checkout: `bun add /path/to/seminr-ts`.)
@@ -73,7 +73,7 @@ import {
   relationships, paths,
   estimatePls, summarizePls,
   bootstrapModel, summarizePlsBoot,
-} from "seminr";
+} from "@seminr/core";
 
 // 1. Load data — any way of obtaining CSV text works
 const data = parseCsv(await Bun.file("mobi.csv").text());       // Bun
@@ -170,7 +170,7 @@ import {
   constructs, reflective, multiItems, singleItem,
   relationships, paths, associations, itemErrors,
   estimateCfa, estimateCbsem, summarizeCbsem, nmGet,
-} from "seminr";
+} from "@seminr/core";
 
 const mm = constructs(
   reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
@@ -236,7 +236,7 @@ and return results identical to their sequential counterparts for the same
 seed or indices:
 
 ```ts
-import { bootstrapModelParallel } from "seminr";
+import { bootstrapModelParallel } from "@seminr/core";
 
 const boot = await bootstrapModelParallel(model, { nboot: 500, seed: 123 });
 // options: workers (default: hardwareConcurrency - 1), plus everything
@@ -258,7 +258,7 @@ const boot = await bootstrapModelParallel(model, {
 });
 ```
 
-(The shared worker entry is `seminr/dist/workers/worker.js`; bundle it with
+(The shared worker entry is `@seminr/core/dist/workers/worker.js`; bundle it with
 `--target browser` for web use — the browser demo's `serve.ts` shows a working
 setup.) Two serialization limits apply across the worker boundary: interaction
 terms must use the builtin methods (`productIndicator`, `orthogonal`,
@@ -291,7 +291,7 @@ or for your own analyses, imposes nothing.
 ## Demos
 
 Runnable examples (mirroring seminr's `demo/` scripts) live in `demos/`. They
-consume the built package — they import `"seminr"` exactly as an installed
+consume the built package — they import `"@seminr/core"` exactly as an installed
 consumer would — so build first:
 
 ```sh

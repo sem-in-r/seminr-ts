@@ -7,7 +7,7 @@ import { describe, it, expect, beforeAll } from "bun:test";
 
 const repoRoot = Bun.fileURLToPath(new URL("..", import.meta.url));
 
-// Demos consume the built package via the "seminr" self-reference, so a
+// Demos consume the built package via the "@seminr/core" self-reference, so a
 // fresh (or stale) dist/ must be built before they can run.
 beforeAll(() => {
   const proc = Bun.spawnSync(["bun", "run", "build"], { cwd: repoRoot });
@@ -122,18 +122,18 @@ describe("browser demo server", () => {
 
       // The demo sources served for the textarea: one PLS example, one
       // CFA/CBSEM example incl. robust (MLR) fit columns, both importing the
-      // bare "seminr" specifier.
+      // bare "@seminr/core" specifier.
       const pls = await fetch(`${base}/snippet-pls.js`);
       expect(pls.status).toBe(200);
       const plsCode = await pls.text();
-      expect(plsCode).toContain('from "seminr"');
+      expect(plsCode).toContain('from "@seminr/core"');
       expect(plsCode).toContain("estimatePls");
       expect(plsCode).toContain("bootstrapModelParallel");
 
       const cbsem = await fetch(`${base}/snippet-cbsem.js`);
       expect(cbsem.status).toBe(200);
       const cbsemCode = await cbsem.text();
-      expect(cbsemCode).toContain('from "seminr"');
+      expect(cbsemCode).toContain('from "@seminr/core"');
       expect(cbsemCode).toContain("Confirmatory Factor Analysis");
       expect(cbsemCode).toContain("CBSEM with Image x Expectation interaction");
       expect(cbsemCode).toContain("chisq.scaled");
