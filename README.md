@@ -27,9 +27,10 @@ It serves two kinds of users:
 
 ## Status
 
-Early development — not yet published to npm. Numerical parity with seminr on
-its bundled `mobi` / ECSI dataset is the acceptance bar for every feature;
-golden fixtures are generated from the R implementation.
+Published to npm as [`@seminr/core`](https://www.npmjs.com/package/@seminr/core).
+Numerical parity with seminr on its bundled `mobi` / ECSI dataset is the
+acceptance bar for every feature; golden fixtures are generated from the R
+implementation.
 
 - **PLS-SEM**: estimation (composite and reflective/PLSc models, path
   weighting/factorial schemes, interactions, two-stage higher-order
@@ -58,8 +59,6 @@ bun add @seminr/core    # or: npm install @seminr/core
 
 The npm package is named `@seminr/core`; the project and its repository are `seminr-ts`
 (the TypeScript port of the [seminr](https://github.com/sem-in-r/seminr) R package).
-
-(Until the first npm release, install from a checkout: `bun add /path/to/seminr-ts`.)
 
 ### A complete PLS analysis
 
