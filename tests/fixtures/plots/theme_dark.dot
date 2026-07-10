@@ -1,0 +1,292 @@
+digraph G {
+
+// ----------------------
+// General graph settings
+// ----------------------
+graph [
+charset = "UTF-8",
+layout = dot,
+label = "",
+fontsize = 24,
+fontcolor = white,
+fontname = helvetica,
+rankdir = LR,
+labelloc = t,
+splines = TRUE
+bgcolor = black
+]
+
+// --------------------
+// The structural model
+// --------------------
+subgraph sm {
+rankdir = LR;
+node [
+shape = ellipse,
+color = white,
+fillcolor = darkslategray,
+style = filled,
+fontsize = 12,
+fontcolor = white,
+height = 1.03933333333333,
+width = 1.27083333333333,
+fontname = helvetica,
+fixedsize = true
+]
+"Image" [label=<<B>Image </B>>, shape = ellipse]
+"Expectation" [label=<<B>Expectation </B><BR /><FONT POINT-SIZE='10'>R² = 0.745</FONT>>, shape = ellipse]
+"Quality" [label=<<B>Quality </B><BR /><FONT POINT-SIZE='10'>R² = 0.759</FONT>>, shape = ellipse]
+"Value" [label=<<B>Value </B><BR /><FONT POINT-SIZE='10'>R² = 0.455</FONT>>, shape = ellipse]
+"Satisfaction" [label=<<B>Satisfaction </B><BR /><FONT POINT-SIZE='10'>R² = 0.927</FONT>>, shape = ellipse]
+"Complaints" [label=<<B>Complaints </B><BR /><FONT POINT-SIZE='10'>R² = 0.353</FONT>>, shape = ellipse]
+"Loyalty" [label=<<B>Loyalty </B><BR /><FONT POINT-SIZE='10'>R² = 0.735</FONT>>, shape = ellipse]
+edge [
+color = white,
+fontsize = 9,
+fontcolor = white,
+fontname = helvetica,
+dir = both,
+arrowhead = normal,
+arrowtail = none
+]
+"Image" -> {"Expectation"}[weight = 1, label = < β = 0.863<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 4.815, style = solid, color = white]
+"Image" -> {"Satisfaction"}[weight = 1, label = < β = 0.15<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 1.25, style = solid, color = white]
+"Image" -> {"Loyalty"}[weight = 1, label = < β = -0.091<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 0.955, style = dashed, color = firebrick]
+"Expectation" -> {"Quality"}[weight = 1, label = < β = 0.871<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 4.855, style = solid, color = white]
+"Expectation" -> {"Value"}[weight = 1, label = < β = -0.054<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 0.77, style = dashed, color = firebrick]
+"Expectation" -> {"Satisfaction"}[weight = 1, label = < β = 0.027<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 0.635, style = solid, color = white]
+"Quality" -> {"Value"}[weight = 1, label = < β = 0.721<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 4.105, style = solid, color = white]
+"Quality" -> {"Satisfaction"}[weight = 1, label = < β = 0.669<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 3.845, style = solid, color = white]
+"Value" -> {"Satisfaction"}[weight = 1, label = < β = 0.178<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 1.39, style = solid, color = white]
+"Satisfaction" -> {"Complaints"}[weight = 1, label = < β = 0.594<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 3.47, style = solid, color = white]
+"Satisfaction" -> {"Loyalty"}[weight = 1, label = < β = 0.962<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 5.31, style = solid, color = white]
+"Complaints" -> {"Loyalty"}[weight = 1, label = < β = -0.039<BR /><FONT POINT-SIZE='7'>   </FONT> >, penwidth = 0.695, style = dashed, color = firebrick]
+}
+// ---------------------
+// The measurement model
+// ---------------------
+
+subgraph construct_1 {
+node [
+shape = box,
+color = lightgray,
+fillcolor = darkgoldenrod4,
+style = filled,
+fontsize = 8,
+fontcolor = white,
+height = 0.169666666666667,
+width = 0.601833333333333,
+fontname = helvetica,
+fixedsize = true
+]
+"IMAG1" [label = "IMAG1", shape = box]
+"IMAG2" [label = "IMAG2", shape = box]
+"IMAG3" [label = "IMAG3", shape = box]
+"IMAG4" [label = "IMAG4", shape = box]
+"IMAG5" [label = "IMAG5", shape = box]
+edge [
+color = lightgray,
+fontsize = 7,
+fontcolor = lightgray,
+fontname = helvetica,
+minlen = 1,
+dir = both
+arrowhead = none
+arrowtail = normal
+]
+"IMAG1" -> {"Image"}[weight = 1000, label = < λ = 0.619 >, penwidth = 2.357, style = solid, color = lightgray]
+"IMAG2" -> {"Image"}[weight = 1000, label = < λ = 0.533 >, penwidth = 2.099, style = solid, color = lightgray]
+"IMAG3" -> {"Image"}[weight = 1000, label = < λ = 0.447 >, penwidth = 1.841, style = solid, color = lightgray]
+"IMAG4" -> {"Image"}[weight = 1000, label = < λ = 0.675 >, penwidth = 2.525, style = solid, color = lightgray]
+"IMAG5" -> {"Image"}[weight = 1000, label = < λ = 0.667 >, penwidth = 2.501, style = solid, color = lightgray]
+
+}
+subgraph construct_2 {
+node [
+shape = box,
+color = lightgray,
+fillcolor = darkgoldenrod4,
+style = filled,
+fontsize = 8,
+fontcolor = white,
+height = 0.169666666666667,
+width = 0.601833333333333,
+fontname = helvetica,
+fixedsize = true
+]
+"CUEX1" [label = "CUEX1", shape = box]
+"CUEX2" [label = "CUEX2", shape = box]
+"CUEX3" [label = "CUEX3", shape = box]
+edge [
+color = lightgray,
+fontsize = 7,
+fontcolor = lightgray,
+fontname = helvetica,
+minlen = 1,
+dir = both
+arrowhead = none
+arrowtail = normal
+]
+"CUEX1" -> {"Expectation"}[weight = 1000, label = < λ = 0.51 >, penwidth = 2.03, style = solid, color = lightgray]
+"CUEX2" -> {"Expectation"}[weight = 1000, label = < λ = 0.464 >, penwidth = 1.892, style = solid, color = lightgray]
+"CUEX3" -> {"Expectation"}[weight = 1000, label = < λ = 0.436 >, penwidth = 1.808, style = solid, color = lightgray]
+
+}
+subgraph construct_3 {
+node [
+shape = box,
+color = lightgray,
+fillcolor = darkgoldenrod4,
+style = filled,
+fontsize = 8,
+fontcolor = white,
+height = 0.169666666666667,
+width = 0.601833333333333,
+fontname = helvetica,
+fixedsize = true
+]
+"PERQ1" [label = "PERQ1", shape = box]
+"PERQ2" [label = "PERQ2", shape = box]
+"PERQ3" [label = "PERQ3", shape = box]
+"PERQ4" [label = "PERQ4", shape = box]
+"PERQ5" [label = "PERQ5", shape = box]
+"PERQ6" [label = "PERQ6", shape = box]
+"PERQ7" [label = "PERQ7", shape = box]
+edge [
+color = lightgray,
+fontsize = 7,
+fontcolor = lightgray,
+fontname = helvetica,
+minlen = 1,
+dir = both
+arrowhead = none
+arrowtail = normal
+]
+"PERQ1" -> {"Quality"}[weight = 1000, label = < λ = 0.805 >, penwidth = 2.915, style = solid, color = lightgray]
+"PERQ2" -> {"Quality"}[weight = 1000, label = < λ = 0.547 >, penwidth = 2.141, style = solid, color = lightgray]
+"PERQ3" -> {"Quality"}[weight = 1000, label = < λ = 0.755 >, penwidth = 2.765, style = solid, color = lightgray]
+"PERQ4" -> {"Quality"}[weight = 1000, label = < λ = 0.677 >, penwidth = 2.531, style = solid, color = lightgray]
+"PERQ5" -> {"Quality"}[weight = 1000, label = < λ = 0.675 >, penwidth = 2.525, style = solid, color = lightgray]
+"PERQ6" -> {"Quality"}[weight = 1000, label = < λ = 0.676 >, penwidth = 2.528, style = solid, color = lightgray]
+"PERQ7" -> {"Quality"}[weight = 1000, label = < λ = 0.814 >, penwidth = 2.942, style = solid, color = lightgray]
+
+}
+subgraph construct_4 {
+node [
+shape = box,
+color = lightgray,
+fillcolor = darkgoldenrod4,
+style = filled,
+fontsize = 8,
+fontcolor = white,
+height = 0.169666666666667,
+width = 0.601833333333333,
+fontname = helvetica,
+fixedsize = true
+]
+"PERV1" [label = "PERV1", shape = box]
+"PERV2" [label = "PERV2", shape = box]
+edge [
+color = lightgray,
+fontsize = 7,
+fontcolor = lightgray,
+fontname = helvetica,
+minlen = 1,
+dir = both
+arrowhead = none
+arrowtail = normal
+]
+"PERV1" -> {"Value"}[weight = 1000, label = < λ = 0.745 >, penwidth = 2.735, style = solid, color = lightgray]
+"PERV2" -> {"Value"}[weight = 1000, label = < λ = 0.939 >, penwidth = 3.317, style = solid, color = lightgray]
+
+}
+subgraph construct_5 {
+node [
+shape = box,
+color = lightgray,
+fillcolor = darkgoldenrod4,
+style = filled,
+fontsize = 8,
+fontcolor = white,
+height = 0.169666666666667,
+width = 0.601833333333333,
+fontname = helvetica,
+fixedsize = true
+]
+"CUSA1" [label = "CUSA1", shape = box]
+"CUSA2" [label = "CUSA2", shape = box]
+"CUSA3" [label = "CUSA3", shape = box]
+edge [
+color = lightgray,
+fontsize = 7,
+fontcolor = lightgray,
+fontname = helvetica,
+minlen = 1,
+dir = both
+arrowhead = none
+arrowtail = normal
+]
+"CUSA1" -> {"Satisfaction"}[weight = 1000, label = < λ = 0.671 >, penwidth = 2.513, style = solid, color = lightgray]
+"CUSA2" -> {"Satisfaction"}[weight = 1000, label = < λ = 0.704 >, penwidth = 2.612, style = solid, color = lightgray]
+"CUSA3" -> {"Satisfaction"}[weight = 1000, label = < λ = 0.829 >, penwidth = 2.987, style = solid, color = lightgray]
+
+}
+subgraph construct_6 {
+node [
+shape = box,
+color = lightgray,
+fillcolor = darkgoldenrod4,
+style = filled,
+fontsize = 8,
+fontcolor = white,
+height = 0.169666666666667,
+width = 0.601833333333333,
+fontname = helvetica,
+fixedsize = true
+]
+"CUSCO" [label = "CUSCO", shape = box]
+edge [
+color = lightgray,
+fontsize = 7,
+fontcolor = lightgray,
+fontname = helvetica,
+minlen = 1,
+dir = both
+arrowhead = none
+arrowtail = normal
+]
+"CUSCO" -> {"Complaints"}[weight = 1000, label = < λ = 1 >, penwidth = 3.5, style = solid, color = lightgray]
+
+}
+subgraph construct_7 {
+node [
+shape = box,
+color = lightgray,
+fillcolor = darkgoldenrod4,
+style = filled,
+fontsize = 8,
+fontcolor = white,
+height = 0.169666666666667,
+width = 0.601833333333333,
+fontname = helvetica,
+fixedsize = true
+]
+"CUSL1" [label = "CUSL1", shape = box]
+"CUSL2" [label = "CUSL2", shape = box]
+"CUSL3" [label = "CUSL3", shape = box]
+edge [
+color = lightgray,
+fontsize = 7,
+fontcolor = lightgray,
+fontname = helvetica,
+minlen = 1,
+dir = both
+arrowhead = normal
+arrowtail = none
+]
+"Loyalty" -> {"CUSL1"}[weight = 1000, label = < λ = 0.609 >, penwidth = 2.327, style = solid, color = lightgray]
+"Loyalty" -> {"CUSL2"}[weight = 1000, label = < λ = 0.151 >, penwidth = 0.953, style = solid, color = lightgray]
+"Loyalty" -> {"CUSL3"}[weight = 1000, label = < λ = 0.865 >, penwidth = 3.095, style = solid, color = lightgray]
+
+}
+}

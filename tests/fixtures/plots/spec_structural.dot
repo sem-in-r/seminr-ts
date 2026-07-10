@@ -1,0 +1,66 @@
+digraph G {
+
+// ----------------------
+// General graph settings
+// ----------------------
+graph [
+charset = "UTF-8",
+layout = dot,
+label = "",
+fontsize = 24,
+fontcolor = black,
+fontname = helvetica,
+rankdir = LR,
+labelloc = t,
+splines = TRUE
+bgcolor = transparent
+]
+
+// --------------------
+// The structural model
+// --------------------
+subgraph sm {
+rankdir = LR;
+node [
+shape = ellipse,
+color = black,
+fillcolor = white,
+style = filled,
+fontsize = 12,
+fontcolor = black,
+height = 1.03933333333333,
+width = 1.27083333333333,
+fontname = helvetica,
+fixedsize = true
+]
+"Image" [label=<<B>Image </B>>, shape = ellipse]
+"Expectation" [label=<<B>Expectation </B>>, shape = ellipse]
+"Quality" [label=<<B>Quality </B>>, shape = ellipse]
+"Value" [label=<<B>Value </B>>, shape = ellipse]
+"Satisfaction" [label=<<B>Satisfaction </B>>, shape = ellipse]
+"Complaints" [label=<<B>Complaints </B>>, shape = ellipse]
+"Loyalty" [label=<<B>Loyalty </B>>, shape = ellipse]
+edge [
+color = black,
+fontsize = 9,
+fontcolor = black,
+fontname = helvetica,
+dir = both,
+arrowhead = normal,
+arrowtail = none
+]
+"Image" -> {"Expectation"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Image" -> {"Satisfaction"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Image" -> {"Loyalty"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Expectation" -> {"Quality"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Expectation" -> {"Value"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Expectation" -> {"Satisfaction"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Quality" -> {"Value"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Quality" -> {"Satisfaction"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Value" -> {"Satisfaction"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Satisfaction" -> {"Complaints"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Satisfaction" -> {"Loyalty"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+"Complaints" -> {"Loyalty"}[weight = 1, penwidth = 1.5, style = solid, color = black]
+}
+
+}

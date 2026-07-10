@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-07-11T02:54:09+0800",
+  "seminrVersion": "2.5.0.9000",
+  "seminrCommit": "252a8afcd24dfb5d5e882a84f4b5d214e8a37919",
+  "rVersion": "R version 4.5.3 (2026-03-11)",
+  "notes": "DOT strings from dot_graph()/dot_graph_htmt() with pdf(nullfile()) device metrics; exact string parity expected. Boot cases use the M6 bootstrap config (M1, nboot=200, seed=123, cores=1; see boot_indices.json).",
+  "cases": {
+    "estimated_basic_reflective": {
+      "description": "dot_graph on all-reflective ECSI (testthat snapshot 'basic PLS all reflective')"
+    },
+    "estimated_mixed_composite": {
+      "description": "dot_graph on mixed reflective/composite ECSI (testthat snapshot 'mixed reflective and composite')"
+    },
+    "estimated_interaction": {
+      "description": "dot_graph on product_indicator interaction model (testthat snapshot 'interaction term')"
+    },
+    "estimated_hoc": {
+      "description": "dot_graph on higher_composite two_stage/mode_B model (testthat snapshot 'higher-order composite')"
+    },
+    "estimated_basic_title": {
+      "description": "dot_graph on all-reflective ECSI with title = 'PLS-Model plot'"
+    },
+    "theme_academic": {
+      "description": "all-reflective ECSI with seminr_theme_academic()"
+    },
+    "theme_smart": {
+      "description": "all-reflective ECSI with seminr_theme_smart()"
+    },
+    "theme_dark": {
+      "description": "all-reflective ECSI with seminr_theme_dark()"
+    },
+    "theme_custom": {
+      "description": "all-reflective ECSI with seminr_theme_create(plot.adj=TRUE, plot.specialcharacters=FALSE, plot.rounding=2, plot.title.fontsize=30, plot.bgcolor='white', sm.edge.label.all_betas=FALSE, sm.node.fill='lightcyan', mm.edge.label.show=FALSE), title='Custom theme'"
+    },
+    "boot_default": {
+      "description": "dot_graph on M6 bootstrap (M1, nboot=200, seed=123), default theme, alpha=0.05"
+    },
+    "boot_alpha01": {
+      "description": "dot_graph on M6 bootstrap, default theme, alpha=0.01"
+    },
+    "boot_full_labels": {
+      "description": "dot_graph on M6 bootstrap with all sm/mm boot label elements enabled (t, p, stars, ci; mm template=edge_template_default), alpha=0.05"
+    },
+    "spec_measurement": {
+      "description": "dot_graph on the mixed reflective/composite measurement model (spec only)"
+    },
+    "spec_structural": {
+      "description": "dot_graph on the ECSI structural model (spec only)"
+    },
+    "spec_specified": {
+      "description": "dot_graph on specify_model(mixed mm, ECSI sm) (spec only)"
+    },
+    "htmt_default": {
+      "description": "dot_graph_htmt on M6 bootstrap, defaults (threshold=1, omit=TRUE, use_ci=FALSE)"
+    },
+    "htmt_all_edges": {
+      "description": "dot_graph_htmt on M6 bootstrap, omit_threshold_edges=FALSE"
+    },
+    "htmt_ci": {
+      "description": "dot_graph_htmt on M6 bootstrap, htmt_threshold=0.9, use_ci=TRUE"
+    }
+  }
+}

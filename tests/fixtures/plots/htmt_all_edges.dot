@@ -1,0 +1,49 @@
+graph G {
+
+// ----------------------
+// General graph settings
+// ----------------------
+graph [
+charset = "UTF-8",
+layout = dot,
+label = "HTMT Plot",
+fontsize = 24,
+fontname = helvetica,
+rankdir = LR,
+labelloc = t,
+ranksep = 0.5,
+nodesep = 0.5,
+splines = TRUE
+]
+
+// --------------------
+// The htmt model
+// --------------------
+node [
+shape = ellipse,
+color = black,
+fillcolor = white,
+style = filled,
+fontsize = 12,
+height = 0.519666666666667,
+width = 1.27083333333333,
+fontname = helvetica,
+fixedsize = true
+]
+edge [
+color = black,
+fontsize = 9,
+fontname = helvetica,
+dir = both,
+arrowhead = none,
+arrowtail = none
+]
+"Image" -- "Expectation" [label = <0.914<BR/>95% CI [0.761; 1.129]>, penwidth = 2.942, weight = 4.376, color = black, style = dashed]
+"Image" -- "Value" [label = <0.658<BR/>95% CI [0.522; 0.784]>, penwidth = 2.174, weight = 6.079, color = black, style = dashed]
+"Image" -- "Satisfaction" [label = <0.912<BR/>95% CI [0.846; 0.976]>, penwidth = 2.936, weight = 4.386, color = black, style = dashed]
+"Expectation" -- "Value" [label = <0.601<BR/>95% CI [0.388; 0.845]>, penwidth = 2.003, weight = 6.656, color = black, style = dashed]
+"Expectation" -- "Satisfaction" [label = <0.879<BR/>95% CI [0.715; 1.103]>, penwidth = 2.837, weight = 4.551, color = black, style = dashed]
+"Value" -- "Satisfaction" [label = <0.741<BR/>95% CI [0.601; 0.872]>, penwidth = 2.423, weight = 5.398, color = black, style = dashed]
+
+
+}

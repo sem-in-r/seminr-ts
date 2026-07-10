@@ -20,6 +20,8 @@ PLS implementation complete (plan + seminr reference digest: `.claude/plans/PLAN
 
 ## Reference implementation
 
+A completed Python port lives in the sibling repo `../seminr-py/` — many of its design decisions were made anticipating reuse here, so check its plans (`../seminr-py/.claude/plans/`) before re-deriving a solution the Python port already settled.
+
 The R source of record is `../seminr/R/`. Key files: `estimate_simplePLS.R` (core algorithm), `estimate_pls.R`, `estimate_bootstrap.R`, `specify_constructs.R`, `specify_interactions.R`, `feature_higher_order.R`; for CBSEM: `estimate_cbsem.R`, `lavaan_syntax.R`, `compute_ten_berge.R` (the ML estimator itself replicates lavaan — formulas digested with file:line refs in `.claude/plans/PLAN.cbsem.md`). Numerical parity with seminr on the bundled `mobi` dataset is the acceptance bar — golden fixtures are generated from R (see plans; CBSEM fixtures use BFGS-polished lavaan optima, see plan Q7).
 
 ## Development
