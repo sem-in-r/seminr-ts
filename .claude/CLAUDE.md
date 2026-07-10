@@ -4,7 +4,7 @@ TypeScript implementation of SEM (Structural Equation Modeling) estimation — P
 
 ## Project Status
 
-PLS implementation complete (plan + seminr reference digest: `.claude/plans/PLAN.research-seminr.md`). CBSEM/CFA implementation complete on branch `cbsem` (plan + lavaan estimation digest: `.claude/plans/PLAN.cbsem.md`, referenced from `CLAUDE.local.md`). Read the relevant plan before making changes. Deferred work and known gaps are consolidated in `.claude/FUTURE.md` — check it before proposing new scope, and update it when deferring or shipping an item.
+PLS implementation complete (plan + seminr reference digest: `.claude/plans/PLAN.research-seminr.md`). CBSEM/CFA implementation complete on branch `cbsem` (plan + lavaan estimation digest: `.claude/plans/PLAN.cbsem.md`, referenced from `CLAUDE.local.md`). Plotting layer complete on branch `plot` (plan: `.claude/plans/PLAN.plot.md`). Read the relevant plan before making changes. Deferred work and known gaps are consolidated in `.claude/FUTURE.md` — check it before proposing new scope, and update it when deferring or shipping an item.
 
 ## Scope (implemented)
 
@@ -16,7 +16,8 @@ PLS implementation complete (plan + seminr reference digest: `.claude/plans/PLAN
 - PLS-MGA (`src/mga/`): `estimatePlsMga` — group split by boolean condition, per-group bootstrap, Henseler nonparametric p-values per structural path; Web Worker parallel variant (`estimatePlsMgaParallel`)
 - Missing-data strategies: `meanReplacement` (default) and `naOmit`, threaded through f², PLSpredict, and bootstrap re-estimation (worker-safe by name); seminr-parity missing-data report and warnings
 - CBSEM/CFA (`estimateCbsem`/`estimateCfa`): own ML estimator equivalent to `lavaan::sem/cfa(std.lv=TRUE)` — LISREL matrices, analytic gradient, BFGS; standardized solution, cor.lv, R², expected-information SEs + solution tables, fit measures, ten Berge construct scores, rhoC/AVE, antecedent VIFs, product-indicator and two-stage interactions, second-order factors; MLR robust layer (default estimator, as seminr): Huber-White sandwich SEs + Yuan-Bentler-Mplus scaled/robust fit columns (`src/cbsem/robust.ts`)
-- Out of scope for now: plotting/presentation layer, FIML/missing data for CBSEM
+- Plotting (`src/plot/`): `plot()`/`dotGraph()` Graphviz-DOT path diagrams for spec-only/estimated/bootstrapped PLS and CBSEM/CFA models (DOT byte-identical to R seminr where R has them; CBSEM/CFA design shared with the py port), themes (`seminrThemeCreate` + default/academic/smart/dark, active-theme slot), `plotHtmt`, `savePlot`/`SeminrPlot.save` (svg/dot/gv), async SVG rendering via optional peer dep `@hpcc-js/wasm-graphviz`; chart plots as dependency-free SVG (`plotScores`, `plotReliabilityTable`, `slopeAnalysis`/`plotInteraction`, `plotPredictError` with R `bw.nrd0` KDE)
+- Out of scope for now: FIML/missing data for CBSEM, raster plot export (PNG/PDF)
 
 ## Reference implementation
 
