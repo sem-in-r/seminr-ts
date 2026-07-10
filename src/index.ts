@@ -344,3 +344,25 @@ export {
   type SavePlotOptions,
 } from "./plot/plot.ts";
 export { renderSvg, rendererAvailable, type RenderOptions } from "./plot/render.ts";
+export {
+  plotScores,
+  scoresColumns,
+  type ScoredModel,
+} from "./plot/charts/scores.ts";
+export { plotReliabilityTable } from "./plot/charts/reliability.ts";
+export {
+  slopeAnalysis,
+  plotInteraction,
+  slopeSeries,
+  type LegendPlace,
+  type PathModel,
+  type SlopeSeries,
+} from "./plot/charts/slopes.ts";
+export {
+  plotPredictError,
+  nrd0Bandwidth,
+  densityEstimate,
+  type DensityEstimate,
+  type PredictErrorSource,
+} from "./plot/charts/predictError.ts";
+export { SvgPlot } from "./plot/charts/svg.ts";
