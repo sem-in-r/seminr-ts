@@ -72,6 +72,22 @@ const cliDemos: Array<{ script: string; markers: string[] }> = [
     ],
   },
   {
+    script: "demos/plot-ecsi.ts",
+    markers: [
+      "Plotting the ECSI model",
+      "DOT source (first lines):",
+      "digraph G {",
+      "Saved estimated-model diagram",
+      "Saved bootstrapped plot",
+      "Saved HTMT plot",
+      "Saved CBSEM diagram",
+      "Statistical plots (SVG)",
+      "Saved reliability chart",
+      "Saved interaction slope plot",
+      "Saved predictive-error density",
+    ],
+  },
+  {
     script: "demos/cbsem-cfa-ecsi.ts",
     markers: [
       "Confirmatory Factor Analysis",
@@ -137,6 +153,13 @@ describe("browser demo server", () => {
       expect(cbsemCode).toContain("Confirmatory Factor Analysis");
       expect(cbsemCode).toContain("CBSEM with Image x Expectation interaction");
       expect(cbsemCode).toContain("chisq.scaled");
+
+      const plot = await fetch(`${base}/snippet-plot.js`);
+      expect(plot.status).toBe(200);
+      const plotCode = await plot.text();
+      expect(plotCode).toContain('from "@seminr/core"');
+      expect(plotCode).toContain("toSvg()");
+      expect(plotCode).toContain("plotReliabilityTable");
 
       // Library + demo-utils bundles the snippet's rewritten imports resolve to
       const lib = await fetch(`${base}/seminr.js`);
