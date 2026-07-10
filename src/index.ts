@@ -308,3 +308,39 @@ export {
   lavaanifyName,
   unlavaanifyName,
 } from "./cbsem/lavaanSyntax.ts";
+
+// Plotting (DOT/Graphviz path diagrams, themes, HTMT)
+export {
+  seminrThemeCreate,
+  seminrThemeDefault,
+  seminrThemeAcademic,
+  seminrThemeSmart,
+  seminrThemeDark,
+  seminrThemeGet,
+  seminrThemeSet,
+  seminrThemeReset,
+  nodeEndoTemplateDefault,
+  nodeExoTemplateDefault,
+  edgeTemplateDefault,
+  edgeTemplateMinimal,
+  type SeminrTheme,
+  type SeminrThemeOptions,
+  type ThemeArrow,
+} from "./plot/theme.ts";
+export {
+  dotGraph,
+  type DotGraphOptions,
+  type PlottableModel,
+} from "./plot/dotGraph.ts";
+export { dotGraphHtmt, type DotGraphHtmtOptions } from "./plot/htmt.ts";
+export {
+  plot,
+  plotHtmt,
+  savePlot,
+  lastSeminrPlot,
+  setLastSeminrPlot,
+  SeminrPlot,
+  type SaveOptions,
+  type SavePlotOptions,
+} from "./plot/plot.ts";
+export { renderSvg, rendererAvailable, type RenderOptions } from "./plot/render.ts";
