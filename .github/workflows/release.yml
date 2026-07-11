@@ -16,14 +16,14 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       # The publish step uses the npm CLI: trusted publishing needs
       # npm >= 11.5.1 (provenance is attested automatically), which bun
       # does not support yet (oven-sh/bun#24855). Everything else stays bun.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
