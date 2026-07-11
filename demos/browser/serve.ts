@@ -44,7 +44,7 @@ async function buildAssets(): Promise<Map<string, string>> {
 }
 
 /** Editable example sources, re-read from disk on every request so edits show on reload. */
-const SNIPPETS = new Set(["snippet-pls.js", "snippet-cbsem.js"]);
+const SNIPPETS = new Set(["snippet-pls.js", "snippet-cbsem.js", "snippet-plot.js"]);
 
 export async function createServer(port = 0) {
   const assets = await buildAssets();

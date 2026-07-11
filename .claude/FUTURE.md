@@ -12,7 +12,7 @@
 ## PLS deliberate exclusions (not gaps)
 
 - **`predict_pls`'s `reps` argument** — re-runs CV on the same fold assignment (no RNG inside `prediction_matrices`), so it only averages identical matrices; not ported.
-- **`is_only_endogenous`** — NAMESPACE-exported but defined in `plot_dot.R` against the dot-graph coding; belongs to the plotting layer below.
+- **`is_only_endogenous`** — shipped with the plotting engine (branch `plot`) as `isOnlyEndogenous` in `src/plot/dotEngine.ts` (internal to the dot-graph coding, as in R).
 - **`computeItCriteriaWeights` NaN handling** — deviates from seminr's NA-poisoned `min()` (its `na.rm` only guards the sum); we skip NaNs in both, honoring the na.rm intent (documented in the source).
 
 ## Performance follow-ups (branch `performance`, 2026-07-06)
@@ -22,7 +22,12 @@
 
 ## Out of scope (both estimators) — will have to get done eventually
 
-1. **Plotting / presentation layer** — `dot_graph*`, themes (`seminr_theme_*`), `plot_htmt`, `plot_scores`, `plot_interaction` + `slope_analysis` (R-graphics simple-slopes plot), `save_plot`/`browse_plot`, and the `print.summary.*` console formatters. seminr-ts returns data objects; rendering belongs in a separate visualization package if ever.
+1. ~~**Plotting / presentation layer**~~ — **shipped on branch `plot` (2026-07-11)**, `src/plot/`: `dotGraph`/`plot`, themes, `plotHtmt`, CBSEM/CFA diagrams, `savePlot` (svg/dot/gv), and the four chart plots as dependency-free SVG (`plotScores`, `plotReliabilityTable`, `slopeAnalysis`/`plotInteraction`, `plotPredictError`). The `print.summary.*` console formatters remain demo-level helpers (`demos/lib/print.ts`), not library surface. Residual plotting deferrals:
+   - **Raster/other export formats** (PNG/PDF/PS/webp) — `save()` supports svg/dot/gv only; PNG could come via `@resvg/resvg-wasm` on the rendered SVG.
+   - **`browse_plot`, `get_theme_doc`** — R-session conveniences, not ported.
+   - **Interactive/HTML widget layer** — out of scope.
+   - **`plot.randomizedweights` RNG jitter parity** — the theme flag is accepted but ignored (as in the py port); R's jitter rides its RNG stream and cannot be matched byte-for-byte.
+   - **d3 pure submodules for chart internals** (plan D5 addendum) — hand-rolled tick/path math proved sufficient; revisit only if the chart set grows.
 2. **npm packaging / publishing** — checks before first release: package-name availability, LICENSE (seminr is MIT-compatible — verify attribution requirements for derived work), `files`/`exports` review, README install instructions.
 
 ## CBSEM technical debt / notes
@@ -34,7 +39,8 @@
 ## Process notes
 
 - This file is committed (`.gitignore` carries a `!.claude/FUTURE.md` exception), unlike the plans in `.claude/plans/`, which stay gitignored and Sideways-synced.
+- Known test-runner quirk (pre-existing, observed 2026-07-11, Bun 1.3.14): `bun test tests/demos.test.ts` **in isolation** fails its browser-server case with `Could not resolve: "../../src/index.ts"` from `Bun.build` — unless another test file that imports `src/` runs in the same process first (the full suite always passes). Reproduces on `main`; revisit if a Bun upgrade fixes it.
 
 ---
 
-Last updated: 2026-07-06 (branch `performance`: PLS iterative-routine speedups shipped; typed-array storage + CBSEM profiling recorded as deferrals)
+Last updated: 2026-07-11 (branch `plot`: plotting layer shipped; residual plotting deferrals recorded)

@@ -308,3 +308,61 @@ export {
   lavaanifyName,
   unlavaanifyName,
 } from "./cbsem/lavaanSyntax.ts";
+
+// Plotting (DOT/Graphviz path diagrams, themes, HTMT)
+export {
+  seminrThemeCreate,
+  seminrThemeDefault,
+  seminrThemeAcademic,
+  seminrThemeSmart,
+  seminrThemeDark,
+  seminrThemeGet,
+  seminrThemeSet,
+  seminrThemeReset,
+  nodeEndoTemplateDefault,
+  nodeExoTemplateDefault,
+  edgeTemplateDefault,
+  edgeTemplateMinimal,
+  type SeminrTheme,
+  type SeminrThemeOptions,
+  type ThemeArrow,
+} from "./plot/theme.ts";
+export {
+  dotGraph,
+  type DotGraphOptions,
+  type PlottableModel,
+} from "./plot/dotGraph.ts";
+export { dotGraphHtmt, type DotGraphHtmtOptions } from "./plot/htmt.ts";
+export {
+  plot,
+  plotHtmt,
+  savePlot,
+  lastSeminrPlot,
+  setLastSeminrPlot,
+  SeminrPlot,
+  type SaveOptions,
+  type SavePlotOptions,
+} from "./plot/plot.ts";
+export { renderSvg, rendererAvailable, type RenderOptions } from "./plot/render.ts";
+export {
+  plotScores,
+  scoresColumns,
+  type ScoredModel,
+} from "./plot/charts/scores.ts";
+export { plotReliabilityTable } from "./plot/charts/reliability.ts";
+export {
+  slopeAnalysis,
+  plotInteraction,
+  slopeSeries,
+  type LegendPlace,
+  type PathModel,
+  type SlopeSeries,
+} from "./plot/charts/slopes.ts";
+export {
+  plotPredictError,
+  nrd0Bandwidth,
+  densityEstimate,
+  type DensityEstimate,
+  type PredictErrorSource,
+} from "./plot/charts/predictError.ts";
+export { SvgPlot } from "./plot/charts/svg.ts";

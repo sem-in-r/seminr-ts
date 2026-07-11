@@ -1,0 +1,4 @@
+# The .dot plot fixtures are byte-parity golden files generated from R
+# (scripts/generate-plot-fixtures.R); keep them LF on every platform so
+# Windows checkouts (core.autocrlf true) don't break the snapshot tests.
+tests/fixtures/plots/*.dot text eol=lf

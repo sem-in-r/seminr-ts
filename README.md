@@ -48,6 +48,12 @@ implementation.
   opting into plain expected-information inference.
 - Missing data is handled by `meanReplacement` (default) or `naOmit`, matching
   seminr's `missing` argument.
+- **Plotting**: `plot(model)` produces seminr's Graphviz path diagrams
+  (specified/estimated/bootstrapped PLS, CBSEM/CFA, HTMT networks, the four
+  theme variants) as DOT text that is byte-identical to R seminr's, rendered
+  to SVG on demand via wasm Graphviz; the chart-style result plots
+  (`plotScores`, `plotReliabilityTable`, `slopeAnalysis`, `plotPredictError`)
+  are dependency-free SVG.
 
 ## Analyzing data with seminr-ts
 
@@ -205,6 +211,46 @@ This example runs as a test in `tests/readme-example.test.ts`. CBSEM
 interactions support the `productIndicator` and `twoStage` methods, and
 second-order factors are specified with `higherReflective(name, dimensions)`.
 
+### Plotting
+
+`plot()` accepts any seminr model — a measurement/structural spec, an
+estimated or bootstrapped PLS model, or a CFA/CBSEM model — and returns a
+`SeminrPlot` wrapping the Graphviz DOT source (byte-identical to R seminr's
+`dot_graph()` output for the model families R supports; CFA/CBSEM diagrams
+are a seminr-ts/py design, since R delegates those to semPlot):
+
+```ts
+import {
+  plot, plotHtmt, savePlot, seminrThemeDark, seminrThemeSet,
+  plotScores, plotReliabilityTable, slopeAnalysis, plotPredictError,
+} from "@seminr/core";
+
+const diagram = plot(model, { title: "ECSI (PLS)" });
+diagram.dot;                       // Graphviz DOT text — always available
+await diagram.toSvg();             // SVG string (wasm Graphviz, loaded on demand)
+await diagram.save("ecsi.svg");    // or .dot / .gv (Bun/Node only)
+await savePlot("last-plot.svg");   // saves the most recent plot, as R's save_plot()
+
+plot(bootModel, { alpha: 0.01 });                  // paths with stars + CIs
+plotHtmt(bootModel, { htmtThreshold: 0.9 });       // HTMT discriminant network
+plot(model, { theme: seminrThemeDark() });         // themes: default/academic/smart/dark
+seminrThemeSet(seminrThemeDark());                 // or set the active theme globally
+```
+
+Rendering needs the optional peer dependency
+[`@hpcc-js/wasm-graphviz`](https://www.npmjs.com/package/@hpcc-js/wasm-graphviz)
+(`bun add @hpcc-js/wasm-graphviz`) — real Graphviz compiled to WebAssembly, so
+`toSvg()` works in Bun, Node, and browsers alike. Without it, the `.dot`
+source is still available and `toSvg()` rejects with an install hint.
+`toSvg()`/`save()` are async (the wasm engine loads on first use) —
+the one deliberate divergence from R's synchronous plotting API.
+
+The chart-style result plots return an `SvgPlot` (`.svg` string plus
+`.save()`) and need no renderer at all: `plotScores(model)` (score
+scatterplot matrix), `plotReliabilityTable(reliabilityTable(model))`,
+`slopeAnalysis(model, dv, moderator, iv)` / `plotInteraction`, and
+`plotPredictError(summarizePlsPredict(prediction), "CUSA1")`.
+
 ## Integrating seminr-ts into a product
 
 ### Data contract
@@ -302,7 +348,8 @@ bun run demos/pls-higher-order.ts    # two-stage higher-order construct
 bun run demos/alternative-models.ts  # comparing alternative structural models
 bun run demos/pls-assessment.ts      # evaluation suite, boot summary, PLSpredict, PLS-MGA
 bun run demos/cbsem-cfa-ecsi.ts      # covariance-based CFA + CBSEM with an interaction
-bun run demos/browser/serve.ts       # browser demo: estimation + worker bootstrap in a web page
+bun run demos/plot-ecsi.ts           # path diagrams (PLS/boot/HTMT/CBSEM) + SVG chart plots
+bun run demos/browser/serve.ts       # browser demo: estimation, bootstrap, and plotting in a web page
 ```
 
 All demos are exercised by `tests/demos.test.ts`.
