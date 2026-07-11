@@ -31,7 +31,9 @@ const plotsUrl = (name: string): URL =>
 
 /** Fixture DOT text without the trailing newline writeLines() appended. */
 export async function loadPlotFixture(name: string): Promise<string> {
-  const text = await Bun.file(plotsUrl(name)).text();
+  // CRLF only ever comes from a git checkout with eol conversion (Windows);
+  // the generated DOT is LF, so normalize before the byte comparison.
+  const text = (await Bun.file(plotsUrl(name)).text()).replaceAll("\r\n", "\n");
   return text.endsWith("\n") ? text.slice(0, -1) : text;
 }
 
