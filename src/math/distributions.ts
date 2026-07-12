@@ -58,6 +58,72 @@ export function lowerRegGamma(a: number, x: number): number {
   return 1 - q;
 }
 
+/**
+ * Continued-fraction expansion for the regularized incomplete beta function
+ * (Numerical Recipes `betacf`, modified Lentz). Converges fast when x is below
+ * the distribution's mode; {@link incompleteBeta} arranges that via symmetry.
+ */
+function betacf(a: number, b: number, x: number): number {
+  const fpmin = 1e-300;
+  const eps = 3e-16;
+  const qab = a + b;
+  const qap = a + 1;
+  const qam = a - 1;
+  let c = 1;
+  let d = 1 - (qab * x) / qap;
+  if (Math.abs(d) < fpmin) d = fpmin;
+  d = 1 / d;
+  let h = d;
+  for (let m = 1; m <= 300; m++) {
+    const m2 = 2 * m;
+    let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
+    d = 1 + aa * d;
+    if (Math.abs(d) < fpmin) d = fpmin;
+    c = 1 + aa / c;
+    if (Math.abs(c) < fpmin) c = fpmin;
+    d = 1 / d;
+    h *= d * c;
+    aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
+    d = 1 + aa * d;
+    if (Math.abs(d) < fpmin) d = fpmin;
+    c = 1 + aa / c;
+    if (Math.abs(c) < fpmin) c = fpmin;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < eps) break;
+  }
+  return h;
+}
+
+/**
+ * Regularized incomplete beta function I_x(a, b) (R's `pbeta`), via the
+ * Numerical Recipes continued fraction on `lgamma`. The symmetry
+ * I_x(a,b) = 1 − I_{1−x}(b,a) selects the fast-converging branch when
+ * x > (a+1)/(a+b+2).
+ */
+export function incompleteBeta(x: number, a: number, b: number): number {
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  const bt = Math.exp(
+    lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x),
+  );
+  if (x < (a + 1) / (a + b + 2)) {
+    return (bt * betacf(a, b, x)) / a;
+  }
+  return 1 - (bt * betacf(b, a, 1 - x)) / b;
+}
+
+/** Student-t CDF (R pt(x, df)) via the incomplete beta function. */
+export function tCdf(x: number, df: number): number {
+  if (Number.isNaN(x)) return NaN;
+  if (x === Infinity) return 1;
+  if (x === -Infinity) return 0;
+  if (x === 0) return 0.5;
+  const p = incompleteBeta(df / (df + x * x), df / 2, 0.5) / 2;
+  return x < 0 ? p : 1 - p;
+}
+
 /** Standard normal CDF (R pnorm). */
 export function normalCdf(x: number): number {
   if (x === 0) return 0.5;
