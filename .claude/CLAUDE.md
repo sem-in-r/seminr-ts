@@ -30,6 +30,7 @@ The R source of record is `../seminr/R/`. Key files: `estimate_simplePLS.R` (cor
 - TDD is mandatory: write failing tests before implementation (red → green). See the plan's task ordering.
 - Toolchain is Bun exclusively: `bun install`, `bun test` (`bun:test`), `bun run`. TypeScript's `tsc` is used only for typechecking and emitting `dist/` (declarations) — no npm, no Node-specific tooling. Library code in `src/` must stay runtime-agnostic: no top-level `node:*`/`Bun.*` imports. Call-time dynamic imports of `node:*` or optional peer dependencies are allowed inside function bodies when the failure path throws a clear, browser-safe error (e.g. `savePlot`'s `node:fs/promises`, `renderSvg`'s `@hpcc-js/wasm-graphviz`). `tests/`, `demos/`, and `scripts/` may use Bun APIs.
 - Keep the public API shaped like seminr's R API where idiomatic in TypeScript (e.g. `constructs()`, `composite()`, `relationships()`, `paths()`, `estimatePls()`, `bootstrapModel()`).
+- Releasing: the version lives in **three** places that must match — `package.json`, `src/version.ts`, and the assertion in `tests/smoke.test.ts` (the git tag `vX.Y.Z` too). Bumping only `package.json` (as the 0.1.2 and 0.2.0 bumps did) ships a package whose runtime `version` export is stale. Always bump all three together, then merge via a release-branch PR (CI is the 3-OS matrix) before tagging; the `v*` tag push triggers the npm publish.
 
 ## Conventions
 
