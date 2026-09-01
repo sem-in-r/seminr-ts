@@ -4,7 +4,7 @@ TypeScript implementation of SEM (Structural Equation Modeling) estimation — P
 
 ## Project Status
 
-PLS implementation complete (plan + seminr reference digest: `.claude/plans/PLAN.research-seminr.md`). CBSEM/CFA implementation complete on branch `cbsem` (plan + lavaan estimation digest: `.claude/plans/PLAN.cbsem.md`, referenced from `CLAUDE.local.md`). Plotting layer complete on branch `plot` (plan: `.claude/plans/PLAN.plot.md`). Read the relevant plan before making changes. Deferred work and known gaps are consolidated in `.claude/FUTURE.md` — check it before proposing new scope, and update it when deferring or shipping an item.
+PLS implementation complete (plan + seminr reference digest: `.claude/plans/001-PLAN-research-seminr/PLAN.md`). CBSEM/CFA implementation complete on branch `cbsem` (plan + lavaan estimation digest: `.claude/plans/002-PLAN-cbsem/PLAN.md`, referenced from `CLAUDE.local.md`). Plotting layer complete on branch `plot` (plan: `.claude/plans/009-PLAN-plot/PLAN.md`). Read the relevant plan before making changes. Deferred work and known gaps are consolidated in `.claude/FUTURE.md` — check it before proposing new scope, and update it when deferring or shipping an item.
 
 ## Scope (implemented)
 
@@ -23,16 +23,26 @@ PLS implementation complete (plan + seminr reference digest: `.claude/plans/PLAN
 
 A completed Python port lives in the sibling repo `../seminr-py/` — many of its design decisions were made anticipating reuse here, so check its plans (`../seminr-py/.claude/plans/`) before re-deriving a solution the Python port already settled.
 
-The R source of record is `../seminr/R/`. Key files: `estimate_simplePLS.R` (core algorithm), `estimate_pls.R`, `estimate_bootstrap.R`, `specify_constructs.R`, `specify_interactions.R`, `feature_higher_order.R`; for CBSEM: `estimate_cbsem.R`, `lavaan_syntax.R`, `compute_ten_berge.R` (the ML estimator itself replicates lavaan — formulas digested with file:line refs in `.claude/plans/PLAN.cbsem.md`). Numerical parity with seminr on the bundled `mobi` dataset is the acceptance bar — golden fixtures are generated from R (see plans; CBSEM fixtures use BFGS-polished lavaan optima, see plan Q7).
+The R source of record is `../seminr/R/`. Key files: `estimate_simplePLS.R` (core algorithm), `estimate_pls.R`, `estimate_bootstrap.R`, `specify_constructs.R`, `specify_interactions.R`, `feature_higher_order.R`; for CBSEM: `estimate_cbsem.R`, `lavaan_syntax.R`, `compute_ten_berge.R` (the ML estimator itself replicates lavaan — formulas digested with file:line refs in `.claude/plans/002-PLAN-cbsem/PLAN.md`). Numerical parity with seminr on the bundled `mobi` dataset is the acceptance bar — golden fixtures are generated from R (see plans; CBSEM fixtures use BFGS-polished lavaan optima, see plan Q7).
 
 ## Development
 
 - TDD is mandatory: write failing tests before implementation (red → green). See the plan's task ordering.
+- One runtime dependency: `@compstats/core` (MIT, no transitive deps), imported **only** through its DOM-free `@compstats/core/stats` subpath (the root entry carries canvas and interactive code; `src/` must stay runtime-agnostic). It supplies R-pinned distributions (`pnorm`/`pchisq`/`pt` and friends), summaries (`mean`/`sd`/`quantile`) and the optimizer (`optim`, which is R's own `vmmin`) behind `src/math/`'s own names. The package is no longer zero-dependency. Three rules follow:
+  1. **Every delegated name carries an explicit type annotation.** 0.5.0's `.d.ts` files used extensionless relative re-exports, which NodeNext resolution rejects and `skipLibCheck` turns into a silent `any`; 0.6.0 fixed it, and the annotations stay as a regression guard. `tests/math/compstats-types.test.ts` enforces the rule *and* checks the upstream property directly.
+  2. **Never inherit R's control defaults from `optim`.** `maxit` defaults to 100 and `reltol` to `sqrt(eps)` = 1.49e-8; inheriting the second stops the ECSI CBSEM fit 21 iterations early while still reporting `convergence: 0`. `bfgs` sets all of them explicitly.
+  3. **The linear algebra stays ours** — `chol`, `cor`, `crossprod`+`solve` and `scale` were all prototyped and declined on measurement (see `.claude/FUTURE.md`). Do not re-open without a new number.
 - Toolchain is Bun exclusively: `bun install`, `bun test` (`bun:test`), `bun run`. TypeScript's `tsc` is used only for typechecking and emitting `dist/` (declarations) — no npm, no Node-specific tooling. Library code in `src/` must stay runtime-agnostic: no top-level `node:*`/`Bun.*` imports. Call-time dynamic imports of `node:*` or optional peer dependencies are allowed inside function bodies when the failure path throws a clear, browser-safe error (e.g. `savePlot`'s `node:fs/promises`, `renderSvg`'s `@hpcc-js/wasm-graphviz`). `tests/`, `demos/`, and `scripts/` may use Bun APIs.
 - Keep the public API shaped like seminr's R API where idiomatic in TypeScript (e.g. `constructs()`, `composite()`, `relationships()`, `paths()`, `estimatePls()`, `bootstrapModel()`).
 - Releasing: the version lives in **three** places that must match — `package.json`, `src/version.ts`, and the assertion in `tests/smoke.test.ts` (the git tag `vX.Y.Z` too). Bumping only `package.json` (as the 0.1.2 and 0.2.0 bumps did) ships a package whose runtime `version` export is stale. Always bump all three together, then merge via a release-branch PR (CI is the 3-OS matrix) before tagging; the `v*` tag push triggers the npm publish.
 
 ## Conventions
 
-- Plans live in `.claude/plans/` (gitignored, synced across machines via Sideways).
+- Plans live in `.claude/plans/` (gitignored, synced across machines via Sideways), **one folder per work stream** named `NNN-PURPOSE-slug`:
+  - `NNN` — zero-padded sequence starting at `001`, strictly increasing and never reused. Take the next unused number by listing the directory.
+  - `PURPOSE` — uppercase tag for the kind of document that started the stream (`PLAN`, `BUGFIX`, `REFACTOR`, `HOTFIX`, …). It does not change when a second kind of document joins the folder.
+  - `slug` — short kebab-case name, normally from the branch name (`/` → `-`, owner prefixes dropped).
+  - The main document takes the name of its kind (`PLAN.md`, `BUGFIX.md`). When a folder holds two or more, prefix each with a letter giving the reading order (`a-PLAN.md`, `b-BUGFIX.md`); a lone document takes no letter. Supporting files keep a kind tag and no letter (`REPORT-performance.html`, `PROBE-scalar.ts`, `SKETCHES.html`), with a suffix when a folder holds several of one kind.
+  - A reference inside one folder uses the bare filename; a reference to another folder uses the full path from the repo root.
+  - Migrated from the earlier flat `PLAN.<name>.md` layout on 2026-09-01 (see `.claude/plans/010-PLAN-compstatslib/PLAN.md`, "Plan-directory migration", for the old → new table).
 - No AI coauthor references in commits, PRs, or issues.

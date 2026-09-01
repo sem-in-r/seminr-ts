@@ -1,161 +1,133 @@
-/** Distribution functions needed for SEM inference (normal, chi-square). */
-
-// Lanczos approximation (g = 7, n = 9), ~15 significant digits.
-const LANCZOS = [
-  0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
-  -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6,
-  1.5056327351493116e-7,
-];
-
-/** log Gamma(x) for x > 0. */
-export function lgamma(x: number): number {
-  if (x < 0.5) {
-    // Reflection: Γ(x)Γ(1−x) = π / sin(πx)
-    return Math.log(Math.PI / Math.sin(Math.PI * x)) - lgamma(1 - x);
-  }
-  const z = x - 1;
-  let a = LANCZOS[0]!;
-  const t = z + 7.5;
-  for (let i = 1; i < LANCZOS.length; i++) a += LANCZOS[i]! / (z + i);
-  return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(a);
-}
-
-/** Regularized lower incomplete gamma P(a, x) via series / continued fraction. */
-export function lowerRegGamma(a: number, x: number): number {
-  if (x <= 0) return 0;
-  if (x < a + 1) {
-    // Series representation.
-    let ap = a;
-    let sum = 1 / a;
-    let del = sum;
-    for (let i = 0; i < 1000; i++) {
-      ap += 1;
-      del *= x / ap;
-      sum += del;
-      if (Math.abs(del) < Math.abs(sum) * 1e-16) break;
-    }
-    return sum * Math.exp(-x + a * Math.log(x) - lgamma(a));
-  }
-  // Continued fraction for Q(a, x) (modified Lentz).
-  const fpmin = 1e-300;
-  let b = x + 1 - a;
-  let c = 1 / fpmin;
-  let d = 1 / b;
-  let h = d;
-  for (let i = 1; i < 1000; i++) {
-    const an = -i * (i - a);
-    b += 2;
-    d = an * d + b;
-    if (Math.abs(d) < fpmin) d = fpmin;
-    c = b + an / c;
-    if (Math.abs(c) < fpmin) c = fpmin;
-    d = 1 / d;
-    const del = d * c;
-    h *= del;
-    if (Math.abs(del - 1) < 1e-16) break;
-  }
-  const q = Math.exp(-x + a * Math.log(x) - lgamma(a)) * h;
-  return 1 - q;
-}
-
 /**
- * Continued-fraction expansion for the regularized incomplete beta function
- * (Numerical Recipes `betacf`, modified Lentz). Converges fast when x is below
- * the distribution's mode; {@link incompleteBeta} arranges that via symmetry.
+ * Distribution functions needed for SEM inference (normal, chi-square, t,
+ * gamma, beta).
+ *
+ * These are delegations to `@compstats/core`, kept behind seminr-ts's own
+ * names and argument order so `@seminr/core/math` importers see no change.
+ *
+ * Why delegate. The implementations that stood here were Lanczos plus the
+ * Numerical Recipes series and continued fractions; `@compstats/core` follows
+ * R's own `nmath` sources instead (`pnchisq.c` for the noncentral chi-square,
+ * `pnt.c` for the t, and the tail-preserving `Q(1/2, z^2/2)` identity for the
+ * normal), and its values are pinned to R by conformance fixtures. R is this
+ * package's acceptance bar, so where the two ever disagreed, the R-pinned one
+ * is the correct one to keep.
+ *
+ * What that cost, measured in `tests/math/compstats-agreement.test.ts` against
+ * R reference values rather than against the old code: nothing a fixture can
+ * see. No probability moves by more than 2.4e-13 in absolute terms, against
+ * CBSEM assertions at 7-10 decimal digits. What it bought: the far tails.
+ * `pt(-1.7, 1000)` was 5.4e-12 off R relative and is now 1.4e-14; `pnorm(-8)`
+ * had lost two of its digits.
+ *
+ * `noncentralChisqCdf` and `chisqCdf` are R's one `pchisq` split in two, which
+ * is how seminr-ts's callers read them.
+ *
+ * Imported from `@compstats/core/stats`, the DOM-free entry: 120 KB against the
+ * root entry's 176 KB, and asserted upstream to reach no `plot/` or
+ * `interactive/` module and to name no DOM global. `src/` must stay
+ * runtime-agnostic, so this is the door to use.
+ *
+ * **Every delegation here carries an explicit type annotation, on purpose.**
+ * `@compstats/core` 0.5.0 shipped `.d.ts` files whose relative re-exports had no
+ * file extension (`export { mean } from "./core/arith"`), which Node16/NodeNext
+ * module resolution rejects — TS2834. This package resolves modules as NodeNext
+ * (it publishes to npm), and `skipLibCheck: true` swallows the error, so every
+ * name arrived as `any` and would silently have infected our own published
+ * declarations. **0.6.0 fixed it** — `pchisq("hello", {}, [], 1, 2, 3)` is now a
+ * compile error here, where under 0.5.0 it was not — so the annotations are no
+ * longer load-bearing. They stay because they cost nothing, they state the
+ * contract at the boundary, and they are what would keep our published types
+ * exact if a future upstream release regressed under `skipLibCheck`.
+ * `tests/math/compstats-types.test.ts` checks the upstream property directly
+ * and keeps the annotation rule behind it. Reported upstream — plan 010, 4f;
+ * their reply is plan 011's `NOTE-for-seminr-ts-2.md` §1.
  */
-function betacf(a: number, b: number, x: number): number {
-  const fpmin = 1e-300;
-  const eps = 3e-16;
-  const qab = a + b;
-  const qap = a + 1;
-  const qam = a - 1;
-  let c = 1;
-  let d = 1 - (qab * x) / qap;
-  if (Math.abs(d) < fpmin) d = fpmin;
-  d = 1 / d;
-  let h = d;
-  for (let m = 1; m <= 300; m++) {
-    const m2 = 2 * m;
-    let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
-    d = 1 + aa * d;
-    if (Math.abs(d) < fpmin) d = fpmin;
-    c = 1 + aa / c;
-    if (Math.abs(c) < fpmin) c = fpmin;
-    d = 1 / d;
-    h *= d * c;
-    aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
-    d = 1 + aa * d;
-    if (Math.abs(d) < fpmin) d = fpmin;
-    c = 1 + aa / c;
-    if (Math.abs(c) < fpmin) c = fpmin;
-    d = 1 / d;
-    const del = d * c;
-    h *= del;
-    if (Math.abs(del - 1) < eps) break;
-  }
-  return h;
-}
 
-/**
- * Regularized incomplete beta function I_x(a, b) (R's `pbeta`), via the
- * Numerical Recipes continued fraction on `lgamma`. The symmetry
- * I_x(a,b) = 1 − I_{1−x}(b,a) selects the fast-converging branch when
- * x > (a+1)/(a+b+2).
- */
-export function incompleteBeta(x: number, a: number, b: number): number {
-  if (x <= 0) return 0;
-  if (x >= 1) return 1;
-  const bt = Math.exp(
-    lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x),
-  );
-  if (x < (a + 1) / (a + b + 2)) {
-    return (bt * betacf(a, b, x)) / a;
-  }
-  return 1 - (bt * betacf(b, a, 1 - x)) / b;
-}
+import {
+  pnorm,
+  pchisq,
+  pt,
+  logGamma,
+  regularizedGammaP,
+  incompleteBeta as csIncompleteBeta,
+} from "@compstats/core/stats";
 
-/** Student-t CDF (R pt(x, df)) via the incomplete beta function. */
+/** log Gamma(x) for x > 0 (R's `lgamma`). */
+export const lgamma: (x: number) => number = logGamma;
+
+/** Regularized lower incomplete gamma P(a, x) (R's `pgamma(x, a)`). */
+export const lowerRegGamma: (a: number, x: number) => number = regularizedGammaP;
+
+/** Regularized incomplete beta function I_x(a, b) (R's `pbeta(x, a, b)`). */
+export const incompleteBeta: (x: number, a: number, b: number) => number = csIncompleteBeta;
+
+/** Student-t CDF (R's `pt(x, df)`). */
 export function tCdf(x: number, df: number): number {
-  if (Number.isNaN(x)) return NaN;
-  if (x === Infinity) return 1;
-  if (x === -Infinity) return 0;
-  if (x === 0) return 0.5;
-  const p = incompleteBeta(df / (df + x * x), df / 2, 0.5) / 2;
-  return x < 0 ? p : 1 - p;
+  return pt(x, df);
 }
 
-/** Standard normal CDF (R pnorm). */
+/** Standard normal CDF (R's `pnorm(x)`). */
 export function normalCdf(x: number): number {
-  if (x === 0) return 0.5;
-  const p = lowerRegGamma(0.5, (x * x) / 2);
-  return x > 0 ? 0.5 + 0.5 * p : 0.5 - 0.5 * p;
+  return pnorm(x);
 }
 
-/** Central chi-square CDF (R pchisq(x, df)). */
+/** Central chi-square CDF (R's `pchisq(x, df)`). */
 export function chisqCdf(x: number, df: number): number {
-  if (x <= 0) return 0;
-  return lowerRegGamma(df / 2, x / 2);
+  return pchisq(x, df);
+}
+
+/** Noncentral chi-square CDF (R's `pchisq(x, df, ncp)`). */
+export function noncentralChisqCdf(x: number, df: number, ncp: number): number {
+  return pchisq(x, df, ncp);
 }
 
 /**
- * Noncentral chi-square CDF (R pchisq(x, df, ncp)): Poisson-weighted mixture
- * of central chi-square CDFs.
+ * Central chi-square **upper** tail (R's `pchisq(x, df, lower.tail = FALSE)`).
+ *
+ * A separate calculation, not `1 - chisqCdf(x, df)`, and the difference is the
+ * point. A lower tail sitting just below 1 carries absolute error that the
+ * subtraction then divides by a probability as small as 1e-10, so every digit
+ * of a small right-tail probability comes from the subtraction rather than from
+ * the series. In the far tail the subtraction has no digits at all to give:
+ * `1 - pchisq(1000, 300)` is exactly 0, where the probability is 3.7e-76.
+ *
+ * Measured in plan 010 (task 1c): R's own upper tail differs from `1 - lower`
+ * at 31 of 64 grid points in the RMSEA regime, and over that grid it improves
+ * the median error against R by 5×, from 5.08e-14 to 1.06e-14. It does not move
+ * the worst case, which is the noncentral series itself.
+ *
+ * **What it changes in practice, stated concretely** (plan 011, slice E): on the
+ * ECSI model the chi-square p-value goes from **exactly 0** to a real value. At
+ * lavaan's own chi-square of 484.921572960681 on 178 df,
+ *
+ *     chisqUpperTail(484.921572960681, 178) = 2.98554436658731e-30
+ *     R's pchisq(..., lower.tail = FALSE)   = 2.9855443665871887e-30
+ *
+ * — agreeing to **4.1e-14 relative**, where `1 - chisqCdf(...)` returns 0 and
+ * has no digits to agree with. `tests/math/distributions.test.ts` pins both.
+ *
+ * Those are the **shortest round-tripping spellings**, which is what
+ * `console.log` prints and therefore what a reader checking this paragraph will
+ * see. R prints the same two doubles at `options(digits = 17)` as
+ * `2.98554436658730989e-30` and `2.98554436658718868e-30`; the pairs are equal
+ * as doubles, not merely close, and the test asserts that rather than leaving
+ * the reader to wonder whether the docstring or the code is wrong.
+ * Every other fit measure moves by at most 5.6e-16.
+ *
+ * Note that lavaan itself forms these as `1 - pchisq(...)` and so reports 0
+ * here, which is why our fixtures store 0: this is a deliberate departure from
+ * the reference, in the direction of the number being right. Nothing that reads
+ * a p-value as a decision at 0.05, 0.01 or 0.001 can tell the difference.
  */
-export function noncentralChisqCdf(x: number, df: number, ncp: number): number {
-  if (ncp === 0) return chisqCdf(x, df);
-  if (x <= 0) return 0;
-  const lambda = ncp / 2;
-  // Sum j over the effective support of Poisson(lambda).
-  let sum = 0;
-  let logWeight = -lambda; // log of Poisson pmf at j=0
-  for (let j = 0; j < 10000; j++) {
-    if (j > 0) logWeight += Math.log(lambda) - Math.log(j);
-    const weight = Math.exp(logWeight);
-    if (weight > 1e-18) {
-      sum += weight * lowerRegGamma(df / 2 + j, x / 2);
-    } else if (j > lambda) {
-      break; // past the Poisson mode and negligible
-    }
-  }
-  return Math.min(1, Math.max(0, sum));
+export function chisqUpperTail(x: number, df: number): number {
+  return pchisq(x, df, 0, { lowerTail: false });
+}
+
+/**
+ * Noncentral chi-square **upper** tail
+ * (R's `pchisq(x, df, ncp, lower.tail = FALSE)`). See {@link chisqUpperTail}.
+ */
+export function noncentralChisqUpperTail(x: number, df: number, ncp: number): number {
+  return pchisq(x, df, ncp, { lowerTail: false });
 }

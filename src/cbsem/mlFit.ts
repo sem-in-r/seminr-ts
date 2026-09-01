@@ -88,7 +88,13 @@ export function startingValues(pt: CbsemParTable, s: Matrix): number[] {
 
 export interface FitMlOptions {
   maxIter?: number;
-  gradTol?: number;
+  /**
+   * `vmmin`'s relative-improvement stopping rule (see `bfgs`). The default is
+   * 1e-15, measured as the floor on these objectives: every CBSEM fixture model
+   * reaches the same point at 1e-15 that it reaches at 1e-16. R's own default
+   * is 1.49e-8 and stops the ECSI fit 21 iterations early.
+   */
+  reltol?: number;
   start?: readonly number[];
 }
 
@@ -147,11 +153,11 @@ export function fitMl(pt: CbsemParTable, s: Matrix, options: FitMlOptions = {}):
     grad: (t) => mlGradient(pt, s, t),
     x0,
     maxIter: options.maxIter ?? 10000,
-    // Push to the double-precision floor (the stall exit fires when objective
-    // decrease dies, typically at gradient ~1e-8 — within ~5e-6 of the exact
-    // optimum even along flat ridges).
-    gradTol: options.gradTol ?? 1e-9,
-    stallGradTol: 1e-6,
+    // Push to the floor. `vmmin` stops on relative improvement alone, and 1e-15
+    // is where these objectives stop moving: every fixture model lands on the
+    // same point at 1e-16. Measured against lavaan rather than against the
+    // previous optimizer — see `bfgs`'s docstring for the table.
+    reltol: options.reltol ?? 1e-15,
   });
   const matrices = buildModelMatrices(pt, result.x);
   signNormalize(pt, matrices);

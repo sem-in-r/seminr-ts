@@ -21,8 +21,8 @@ It serves two kinds of users:
   notebook that runs TypeScript) instead of R. Start at
   [Analyzing data with seminr-ts](#analyzing-data-with-seminr-ts).
 - **Developers** embedding SEM estimation in a product — a dashboard, a survey
-  platform, a browser tool. The library is zero-dependency, runtime-agnostic
-  ESM with TypeScript types. Start at
+  platform, a browser tool. The library is runtime-agnostic ESM with TypeScript
+  types and a single runtime dependency. Start at
   [Integrating seminr-ts into a product](#integrating-seminr-ts-into-a-product).
 
 ## Status
@@ -266,9 +266,20 @@ JSON-serializable; nothing is a class instance.
 
 ### Runtime support
 
-The library is zero-dependency, runtime-agnostic ES modules — no `node:*` or
-`Bun.*` APIs anywhere in `src/` (a test-guarded browser-target bundle check
-keeps it that way). It runs in Bun, Node, Deno, and web browsers.
+The library is runtime-agnostic ES modules — no `node:*` or `Bun.*` APIs
+anywhere in `src/` (a test-guarded browser-target bundle check keeps it that
+way). It runs in Bun, Node, Deno, and web browsers.
+
+There is one runtime dependency, [`@compstats/core`](https://www.npmjs.com/package/@compstats/core)
+(MIT, no transitive dependencies of its own), reached through its DOM-free
+`@compstats/core/stats` entry. It supplies the distribution functions, the
+summary statistics and the optimizer — `pnorm`, `pchisq`, `pt`, `mean`, `sd`,
+`quantile`, and `optim`, which is R's own `vmmin` — as ports of R's `nmath` and
+`optim.c` sources. Delegating them replaced hand-written approximations with
+routines pinned to R by conformance fixtures, which is the same acceptance bar
+this package is held to; the CBSEM estimator's fit now lands measurably closer
+to lavaan's than the hand-rolled BFGS it replaced. Graphviz rendering remains an
+optional peer dependency.
 TypeScript declarations ship in the package, `sideEffects: false` is set, so
 bundlers can tree-shake unused estimators (e.g. shipping only PLS without the
 CBSEM code).

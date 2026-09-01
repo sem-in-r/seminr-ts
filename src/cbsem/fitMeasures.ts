@@ -7,7 +7,11 @@
 
 import type { Matrix } from "../math/matrix.ts";
 import { cholesky, logDetFromChol, cholInverse } from "../math/cholesky.ts";
-import { chisqCdf, noncentralChisqCdf } from "../math/distributions.ts";
+import {
+  chisqUpperTail,
+  noncentralChisqCdf,
+  noncentralChisqUpperTail,
+} from "../math/distributions.ts";
 import type { CbsemParTable } from "./partable.ts";
 import { impliedSigma } from "./sigma.ts";
 import type { MlFitResult } from "./mlFit.ts";
@@ -116,7 +120,7 @@ function rmseaCi(
 /** P(RMSEA <= h0 rejected): 1 - pchisq(X2, df, ncp = N df h0^2 / c.hat). */
 function rmseaClosefit(x2: number, df: number, n: number, cHat = 1, h0 = 0.05): number {
   if (!(df > 0)) return Number.NaN;
-  return 1 - noncentralChisqCdf(x2, df, (n * df * h0 * h0) / cHat);
+  return noncentralChisqUpperTail(x2, df, (n * df * h0 * h0) / cHat);
 }
 
 /** MacCallum et al. not-close-fit: pchisq(X2, df, ncp = N df h0^2 / c.hat). */
@@ -138,7 +142,7 @@ export function fitMeasures(
   const df = pstar - npar;
   const fmin = fit.objective;
   const chisq = 2 * n * fmin;
-  const pvalue = df > 0 ? 1 - chisqCdf(chisq, df) : 1;
+  const pvalue = df > 0 ? chisqUpperTail(chisq, df) : 1;
 
   // Baseline (independence) model: Sigma = diag(S) — closed form.
   const cholS = cholesky(s);
@@ -147,7 +151,7 @@ export function fitMeasures(
   const baselineF = sumLogDiag - logDetS;
   const baselineChisq = n * baselineF;
   const baselineDf = pstar - p;
-  const baselinePvalue = baselineDf > 0 ? 1 - chisqCdf(baselineChisq, baselineDf) : 1;
+  const baselinePvalue = baselineDf > 0 ? chisqUpperTail(baselineChisq, baselineDf) : 1;
 
   // Log-likelihoods (likelihood = "normal": N-denominator S is the MLE).
   const sigma = impliedSigma(fit.matrices);
@@ -222,12 +226,12 @@ export function fitMeasures(
 
   out["chisq.scaled"] = chisqScaled;
   out["df.scaled"] = dfScaled;
-  out["pvalue.scaled"] = df > 0 ? 1 - chisqCdf(chisqScaled, df) : 1;
+  out["pvalue.scaled"] = df > 0 ? chisqUpperTail(chisqScaled, df) : 1;
   out["chisq.scaling.factor"] = c;
   out["baseline.chisq.scaled"] = baselineChisqScaled;
   out["baseline.df.scaled"] = baselineDfScaled;
   out["baseline.pvalue.scaled"] =
-    baselineDf > 0 ? 1 - chisqCdf(baselineChisqScaled, baselineDf) : 1;
+    baselineDf > 0 ? chisqUpperTail(baselineChisqScaled, baselineDf) : 1;
   out["baseline.chisq.scaling.factor"] = cB;
 
   out["cfi.scaled"] = cfiOf(chisqScaled, df, baselineChisqScaled, baselineDf);

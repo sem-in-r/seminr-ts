@@ -117,3 +117,166 @@ describe("quantile (R type-7)", () => {
     expect(quantile(v, 1)).toBe(9);
   });
 });
+
+/**
+ * The `@compstats/core` delegation of `mean`, `sd` and `quantile` (plan 010,
+ * slice 1e), pinned on a bootstrap-shaped sample rather than a toy array: 500
+ * replicates drawn through this package's own `mulberry32(20260901)` and shaped
+ * like a path coefficient, which is what `bootPercentileCIs` and
+ * `summarizePlsBoot` actually feed these three.
+ *
+ * `mean` and `sd` are asserted **exactly**, with `Object.is`, against the loops
+ * they replaced. `quantile` is not — that swap deliberately moves the last bit,
+ * and R decides where it should land.
+ */
+const QUANTILE_SAMPLE: number[] = JSON.parse(
+  await Bun.file(new URL("../fixtures/data/quantile-sample.json", import.meta.url)).text(),
+) as number[];
+
+describe("delegated summaries on a bootstrap-shaped sample", () => {
+  /**
+   * Read from a fixture rather than regenerated, and that is load-bearing.
+   *
+   * It was originally built here by mulberry32 plus Box-Muller. `Math.log` and
+   * `Math.cos` are **not** correctly rounded — IEEE-754 requires it of `sqrt`
+   * and the four arithmetic operations, not of the transcendentals — so every
+   * libm gives slightly different last bits and the sample differed by platform.
+   * Most assertions below survived that, because they carry a tolerance. The
+   * count assertions did not: `moved` came out 227 on macOS and **228 on
+   * Linux**, and CI caught it on the 3-OS matrix.
+   *
+   * Loosening those counts to a range was the obvious fix and the wrong one —
+   * the exact counts are the evidence this file exists to record, and a range
+   * records nothing. Regenerating the sample from arithmetic only (Irwin-Hall
+   * in place of Box-Muller) was tried and is worse on the merits: it is bounded
+   * and more concentrated, so only 4 of the 7 probabilities land on R's exact
+   * double instead of 6, only 1 of the 5 spot checks exercises the difference
+   * instead of 5, and 2 of the round probabilities start moving, which destroys
+   * the point of the sweep.
+   *
+   * So the sample is pinned as data. Every R reference below was generated from
+   * exactly these 500 doubles, JSON round-trips a double exactly, and the file
+   * is now identical on every platform by construction.
+   */
+  const sample = QUANTILE_SAMPLE;
+  const N = sample.length;
+
+  /** The retired `mean`: a left fold from 0, then one division. */
+  const legacyMean = (x: readonly number[]): number => {
+    let s = 0;
+    for (const v of x) s += v;
+    return s / x.length;
+  };
+
+  /** The retired `sd`: centered squares, folded from 0, n−1 denominator. */
+  const legacySd = (x: readonly number[]): number => {
+    const m = legacyMean(x);
+    let ss = 0;
+    for (const v of x) ss += (v - m) * (v - m);
+    return Math.sqrt(ss / (x.length - 1));
+  };
+
+  /** The retired `quantile`: type 7 written as `low + h * (high - low)`. */
+  const legacyQuantile = (x: readonly number[], p: number): number => {
+    const sorted = [...x].sort((a, b) => a - b);
+    const h = (sorted.length - 1) * p;
+    const lo = Math.floor(h);
+    const hi = Math.ceil(h);
+    return sorted[lo]! + (h - lo) * (sorted[hi]! - sorted[lo]!);
+  };
+
+  it("computes mean bit-identically to the loop it replaced", () => {
+    // Both fold from 0 in the same order, so this is exact, not close.
+    expect(Object.is(mean(sample), legacyMean(sample))).toBe(true);
+    // R agrees to 15 digits but not to the bit — R's `mean` makes a second pass
+    // over the residuals to refine the sum, which neither implementation does.
+    // That gap predates this delegation and is unchanged by it.
+    expect(mean(sample)).toBeCloseTo(4.25388033916636099e-1, 15);
+  });
+
+  it("computes sd bit-identically to the loop it replaced", () => {
+    expect(Object.is(sd(sample), legacySd(sample))).toBe(true);
+    // R: sd(x) — 1 ulp away, for the same reason as `mean` above.
+    expect(sd(sample)).toBeCloseTo(8.75563367220183603e-2, 15);
+  });
+
+  it("matches R at every bootstrap probability, to the bit at six of seven", () => {
+    // R: quantile(x, p, type = 7), options(digits = 17). R's type-7 rule is
+    // `(1 - h) * low + h * high`, which is now the expression evaluated here,
+    // so most of these land on R's exact double. p = 0.025 is one ulp out —
+    // R evaluates the same expression through its own vectorized C path, and
+    // that much last-bit noise survives. The retired expression was one ulp out
+    // at the same probability, so nothing regressed here.
+    const R: [number, number][] = [
+      [0.025, 2.52839510045765770e-1],
+      [0.05, 2.74370487119763029e-1],
+      [0.25, 3.63563087099769311e-1],
+      [0.5, 4.27923508256104146e-1],
+      [0.75, 4.88551708645892480e-1],
+      [0.95, 5.66733361581094552e-1],
+      [0.975, 5.85647735743420439e-1],
+    ];
+    let exact = 0;
+    for (const [p, expected] of R) {
+      if (Object.is(quantile(sample, p), expected)) exact++;
+      expect(Math.abs(quantile(sample, p) - expected)).toBeLessThanOrEqual(
+        Number.EPSILON * expected,
+      );
+    }
+    expect(exact).toBe(6);
+  });
+
+  it("differs from the retired quantile, and never by more than one ulp", () => {
+    // The whole reason this swap is not bit-identical. `low + h * (high - low)`
+    // and `(1 - h) * low + h * high` are the same quantity in exact arithmetic
+    // and round differently in doubles, which is why the bootstrap percentile
+    // CIs in benchmark/equivalence.ts move. R writes it the second way, so the
+    // second way is the one to keep.
+    //
+    // The seven probabilities above happen to agree on this sample, which is
+    // why the sweep is over all 999 — 227 of them differ. A test that only
+    // probed the round numbers would have reported "no change" and been wrong.
+    let moved = 0;
+    for (let i = 1; i < 1000; i++) {
+      const p = i / 1000;
+      const now = quantile(sample, p);
+      const before = legacyQuantile(sample, p);
+      if (Object.is(now, before)) continue;
+      moved++;
+      expect(Math.abs(now - before)).toBeLessThanOrEqual(Number.EPSILON * Math.abs(now));
+    }
+    expect(moved).toBe(227);
+  });
+
+  it("takes R's side of that difference", () => {
+    // Spot-checked at five probabilities where the two expressions disagree.
+    // R: quantile(x, p, type = 7), options(digits = 17).
+    const R: [number, number][] = [
+      [0.001, 2.07671726334950513e-1],
+      [0.007, 2.34040525698613194e-1],
+      [0.01, 2.38972522082736588e-1],
+      [0.012, 2.39897674123855570e-1],
+      [0.021, 2.49460769379650726e-1],
+    ];
+    let closer = 0;
+    for (const [p, expected] of R) {
+      const now = Math.abs(quantile(sample, p) - expected);
+      const before = Math.abs(legacyQuantile(sample, p) - expected);
+      if (now < before) closer++;
+      // Neither is ever more than an ulp out; the question is only which lands
+      // on R's double. The delegation does on four of the five, the retired
+      // expression on one — R's own evaluation order leaves that much noise.
+      expect(now).toBeLessThanOrEqual(Number.EPSILON * expected);
+    }
+    expect(closer).toBe(4);
+  });
+
+  it("keeps R's guard against interpolating between equal order statistics", () => {
+    // R's type 7 only interpolates when `index > lo && x[hi] != qs`; a knot
+    // probability and a tied pair must return the order statistic itself.
+    expect(quantile([1, 2, 3, 4, 5], 0.5)).toBe(3);
+    expect(quantile([2, 2, 2, 2], 0.5)).toBe(2);
+    expect(quantile([1, 2, 3], 0)).toBe(1);
+    expect(quantile([1, 2, 3], 1)).toBe(3);
+  });
+});

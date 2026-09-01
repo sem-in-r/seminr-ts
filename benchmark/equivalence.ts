@@ -39,12 +39,26 @@ import { summarizePls } from "../src/evaluate/summarizePls.ts";
 import { predictPls } from "../src/predict/predictPls.ts";
 import { predict } from "../src/predict/predict.ts";
 import { estimatePlsMga } from "../src/mga/estimatePlsMga.ts";
+import { estimateCbsem, type CbsemModel } from "../src/cbsem/estimateCbsem.ts";
+import { estimateCfa, type CfaModel } from "../src/cbsem/estimateCfa.ts";
+import { summarizeCbsem, summarizeCfa } from "../src/cbsem/summarize.ts";
+import { associations, itemErrors } from "../src/specify/associations.ts";
+import { higherReflective } from "../src/specify/reflective.ts";
 import { getColumn, type Dataset } from "../src/estimate/data.ts";
 import type { NamedMatrix } from "../src/math/matrix.ts";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
 const BASELINE_PATH = `${repoRoot}benchmark/equivalence-baseline.json`;
 const capture = Bun.argv.includes("--capture");
+/** Report per-scenario move counts and worst absolute/relative deltas instead
+ *  of the first N textual diffs: `--summary`. Use when a slice is expected to
+ *  move numbers and the question is how far, not whether. */
+const summary = Bun.argv.includes("--summary");
+/** Max reported diffs per scenario: `--limit N` (default 5). */
+const diffLimit = (() => {
+  const i = Bun.argv.indexOf("--limit");
+  return i >= 0 ? Number(Bun.argv[i + 1]) : 5;
+})();
 
 // ---------------------------------------------------------------------------
 // Models (ECSI on mobi, same structures as benchmark/run.ts)
@@ -255,6 +269,140 @@ const scenarios: Record<string, () => unknown> = {
 };
 
 // ---------------------------------------------------------------------------
+// CBSEM / CFA scenarios (the estimator runs once — no bootstrap loop, so the
+// whole estimation is serialized: unstandardized matrices, standardized
+// solution, fit measures, the robust layer, ten Berge scores and the summary
+// tables that carry the standard errors).
+// ---------------------------------------------------------------------------
+
+const cbReflectiveMm = constructs(
+  reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
+  reflective("Quality", multiItems("PERQ", [1, 2, 3, 4, 5, 6, 7])),
+  reflective("Value", multiItems("PERV", [1, 2])),
+  reflective("Satisfaction", multiItems("CUSA", [1, 2, 3])),
+  reflective("Complaints", singleItem("CUSCO")),
+  reflective("Loyalty", multiItems("CUSL", [1, 2, 3])),
+);
+const cbEcsiSm = relationships(
+  paths(["Image", "Quality"], ["Value", "Satisfaction"]),
+  paths(["Value", "Satisfaction"], ["Complaints", "Loyalty"]),
+  paths("Complaints", "Loyalty"),
+);
+const cbEcsiAm = associations(itemErrors(["PERQ1", "PERQ2"], "IMAG1"));
+
+const cfaDocMm = constructs(
+  reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
+  reflective("Expectation", multiItems("CUEX", [1, 2, 3])),
+  reflective("Quality", multiItems("PERQ", [1, 2, 3, 4, 5, 6, 7])),
+);
+const cfaDocAm = associations(itemErrors(["PERQ1", "PERQ2"], "CUEX3"), itemErrors("IMAG1", "CUEX2"));
+
+const cbIntxnPartialMm = constructs(
+  reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
+  reflective("Expectation", singleItem("CUEX3")),
+  reflective("Value", multiItems("PERV", [1, 2])),
+  reflective("Satisfaction", multiItems("CUSA", [1, 2, 3])),
+);
+const cbIntxnSm = relationships(
+  paths(["Image", "Expectation", "Value", "Image*Expectation"], "Satisfaction"),
+);
+
+const cbHocMm = constructs(
+  reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
+  reflective("Satisfaction", multiItems("CUSA", [1, 2, 3])),
+  higherReflective("ImageSat", ["Image", "Satisfaction"]),
+  reflective("Expectation", multiItems("CUEX", [1, 2, 3])),
+  reflective("Loyalty", multiItems("CUSL", [1, 2, 3])),
+);
+const cbHocSm = relationships(paths(["ImageSat", "Satisfaction", "Expectation"], "Loyalty"));
+
+function estimationPayload(model: CbsemModel | CfaModel): Record<string, unknown> {
+  const { fit, std, fitMeasures: fm, robust, n, estimator } = model.estimation;
+  return {
+    n,
+    estimator,
+    theta: fit.theta,
+    objective: fit.objective,
+    iterations: fit.iterations,
+    converged: fit.converged,
+    unstd: {
+      lambda: fit.matrices.lambda,
+      beta: fit.matrices.beta ?? null,
+      psi: fit.matrices.psi,
+      theta: fit.matrices.theta,
+    },
+    std: {
+      lambda: std.lambda,
+      beta: std.beta ?? null,
+      psi: std.psi,
+      theta: std.theta,
+      corLv: std.corLv,
+      r2: std.r2,
+      observedSd: std.observedSd,
+      latentSd: std.latentSd,
+    },
+    fitMeasures: fm,
+    robust: robust
+      ? {
+          se: robust.se,
+          vcov: robust.vcov,
+          traceH1: robust.traceH1,
+          traceH0: robust.traceH0,
+          traceUGamma: robust.traceUGamma,
+          scalingFactor: robust.scalingFactor,
+          baselineScalingFactor: robust.baselineScalingFactor,
+          scalingFactorH1: robust.scalingFactorH1,
+          scalingFactorH0: robust.scalingFactorH0,
+        }
+      : null,
+    factorLoadings: nm(model.factorLoadings),
+    itemWeights: nm(model.itemWeights),
+    constructScores: model.constructScores,
+    lavaanModel: model.lavaanModel,
+  };
+}
+
+const cbsemPayload = (model: CbsemModel) => ({
+  ...estimationPayload(model),
+  pathCoef: nm(model.pathCoef),
+  summary: summarizeCbsem(model),
+});
+const cfaPayload = (model: CfaModel) => ({
+  ...estimationPayload(model),
+  summary: summarizeCfa(model),
+});
+
+Object.assign(scenarios, {
+  cbsem_ecsi_mlr: () => cbsemPayload(estimateCbsem(mobi, cbReflectiveMm, cbEcsiSm, cbEcsiAm)),
+  cbsem_ecsi_ml: () =>
+    cbsemPayload(estimateCbsem(mobi, cbReflectiveMm, cbEcsiSm, cbEcsiAm, { estimator: "ML" })),
+  cfa_doc: () => cfaPayload(estimateCfa(mobi, cfaDocMm, cfaDocAm)),
+  cbsem_intxn_pi: () =>
+    cbsemPayload(
+      estimateCbsem(
+        mobi,
+        [
+          ...cbIntxnPartialMm,
+          interactionTerm({ iv: "Image", moderator: "Expectation", method: productIndicator }),
+        ],
+        cbIntxnSm,
+      ),
+    ),
+  cbsem_intxn_two_stage: () =>
+    cbsemPayload(
+      estimateCbsem(
+        mobi,
+        [
+          ...cbIntxnPartialMm,
+          interactionTerm({ iv: "Image", moderator: "Expectation", method: twoStage }),
+        ],
+        cbIntxnSm,
+      ),
+    ),
+  cbsem_hoc: () => cbsemPayload(estimateCbsem(mobi, cbHocMm, cbHocSm)),
+} satisfies Record<string, () => unknown>);
+
+// ---------------------------------------------------------------------------
 // Serialize / compare (exact; NaN preserved via sentinel)
 // ---------------------------------------------------------------------------
 
@@ -271,6 +419,40 @@ function run(): Record<string, unknown> {
     console.log(`  ${name.padEnd(34)} ${((Bun.nanoseconds() - t0) / 1e9).toFixed(2)}s`);
   }
   return out;
+}
+
+/** One numeric field that moved between baseline and current. */
+interface Move {
+  path: string;
+  from: number;
+  to: number;
+  abs: number;
+  rel: number;
+}
+
+/** Collect every moved number (rather than the first few differing paths). */
+function collectMoves(a: unknown, b: unknown, path: string, out: Move[]): void {
+  if (a === b) return;
+  if (typeof a === "number" && typeof b === "number") {
+    const abs = Math.abs(a - b);
+    out.push({ path, from: a, to: b, abs, rel: b === 0 ? abs : abs / Math.abs(b) });
+    return;
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return;
+    for (let i = 0; i < a.length; i++) collectMoves(a[i], b[i], `${path}[${i}]`, out);
+    return;
+  }
+  if (a && b && typeof a === "object" && typeof b === "object") {
+    for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+      collectMoves(
+        (a as Record<string, unknown>)[k],
+        (b as Record<string, unknown>)[k],
+        `${path}.${k}`,
+        out,
+      );
+    }
+  }
 }
 
 function diffPaths(a: unknown, b: unknown, path: string, out: string[], limit = 5): void {
@@ -318,14 +500,36 @@ if (capture) {
   console.log("");
   for (const name of Object.keys(scenarios)) {
     const diffs: string[] = [];
-    diffPaths(baseline[name], current[name], name, diffs);
+    diffPaths(baseline[name], current[name], name, diffs, diffLimit);
     if (diffs.length === 0) {
       console.log(`  ✓ ${name}`);
-    } else {
-      failed++;
-      console.log(`  ✗ ${name}`);
-      for (const d of diffs) console.log(`      ${d}`);
+      continue;
     }
+    failed++;
+    console.log(`  ✗ ${name}`);
+    if (!summary) {
+      for (const d of diffs) console.log(`      ${d}`);
+      continue;
+    }
+    const moves: Move[] = [];
+    collectMoves(baseline[name], current[name], name, moves);
+    if (moves.length === 0) {
+      // Diverged on something that is not a number — a version string, a name,
+      // a changed shape. Those are never "within tolerance", so show them.
+      for (const d of diffs) console.log(`      ${d}`);
+      continue;
+    }
+    const worstAbs = moves.reduce((w, m) => (m.abs > w.abs ? m : w), moves[0]!);
+    const worstRel = moves.reduce((w, m) => (m.rel > w.rel ? m : w), moves[0]!);
+    const fields = new Set(moves.map((m) => m.path.replace(/\[\d+\]/g, "[]")));
+    console.log(`      ${moves.length} number(s) moved across ${fields.size} field shape(s)`);
+    console.log(
+      `      worst |Δ| = ${worstAbs.abs.toExponential(2)} at ${worstAbs.path} (${worstAbs.from} → ${worstAbs.to})`,
+    );
+    console.log(
+      `      worst relΔ = ${worstRel.rel.toExponential(2)} at ${worstRel.path} (${worstRel.from} → ${worstRel.to})`,
+    );
+    for (const f of [...fields].sort()) console.log(`        · ${f}`);
   }
   console.log(
     failed === 0

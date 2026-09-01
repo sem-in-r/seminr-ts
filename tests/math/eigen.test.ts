@@ -72,3 +72,94 @@ describe("symMatrixPower", () => {
     }
   });
 });
+
+/**
+ * A rank-deficient Gram matrix: `b` spans two dimensions in three columns, so
+ * `b' b` has one structurally zero eigenvalue whose computed *sign* is a
+ * rounding artefact. This is the shape the C5 higher-order CBSEM model makes in
+ * `src/cbsem/tenBerge.ts` — `ImageSat` is a second-order factor over exactly
+ * `Image` and `Satisfaction`, so its five latent loading columns span four
+ * dimensions — and it is the shape that turned three separate perturbations
+ * during plan 010 into NaN factor scores.
+ */
+const RANK_DEFICIENT = (() => {
+  const b = [
+    [1, 0, 1],
+    [0, 1, 1],
+    [2, 1, 3],
+    [1, 3, 4],
+    [0.5, 0.25, 0.75],
+  ];
+  // b' b, symmetric and exactly singular in exact arithmetic.
+  return Array.from({ length: 3 }, (_, i) =>
+    Array.from({ length: 3 }, (_, j) => b.reduce((s, row) => s + row[i]! * row[j]!, 0)),
+  );
+})();
+
+describe("symMatrixPower on a structurally singular matrix", () => {
+  it("treats a numerically zero eigenvalue as zero, whichever side of zero it lands", () => {
+    const { values } = jacobiEigenSym(RANK_DEFICIENT);
+    const smallest = values[values.length - 1]!;
+    // The premise: the third eigenvalue is rounding noise, not a number.
+    expect(Math.abs(smallest)).toBeLessThan(1e-12);
+
+    const p = symMatrixPower(RANK_DEFICIENT, -0.5);
+    for (const row of p) for (const v of row) expect(Number.isFinite(v)).toBe(true);
+  });
+
+  it("gives the same answer whether the artefact rounds positive or negative", () => {
+    // The sharp edge, stated directly. A diagonal matrix carries its
+    // eigenvalues exactly, so these two differ only in the sign of an artefact
+    // no model can distinguish — and before this fix the second was NaN
+    // throughout while the first carried a spurious 1e8.
+    const positive = symMatrixPower(
+      [
+        [4, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1e-16],
+      ],
+      -0.5,
+    );
+    const negative = symMatrixPower(
+      [
+        [4, 0, 0],
+        [0, 1, 0],
+        [0, 0, -1e-16],
+      ],
+      -0.5,
+    );
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        expect(Number.isFinite(negative[i]![j]!)).toBe(true);
+        expect(negative[i]![j]!).toBe(positive[i]![j]!);
+      }
+    }
+    // Dropped, not inverted: the null direction contributes nothing.
+    expect(positive[2]![2]!).toBe(0);
+    // The directions that are real are untouched.
+    expect(positive[0]![0]!).toBe(0.5);
+    expect(positive[1]![1]!).toBe(1);
+  });
+
+  it("is the Moore-Penrose pseudo-inverse square root: P A P = P", () => {
+    // With the null direction dropped, `A^-0.5 A A^-0.5` is the projector onto
+    // the range, which is idempotent. A NaN or a 1e8 artefact fails this.
+    const half = symMatrixPower(RANK_DEFICIENT, -0.5);
+    const proj = matmul(matmul(half, RANK_DEFICIENT), half);
+    const sq = matmul(proj, proj);
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) expect(sq[i]![j]!).toBeCloseTo(proj[i]![j]!, 10);
+    }
+  });
+
+  it("still raises a genuinely negative eigenvalue to a NaN, not to zero", () => {
+    // Indefiniteness is a modelling error and must stay visible; only rounding
+    // noise at the zero threshold is absorbed.
+    const indefinite = [
+      [1, 0],
+      [0, -2],
+    ];
+    const p = symMatrixPower(indefinite, 0.5);
+    expect(p.some((row) => row.some((v) => Number.isNaN(v)))).toBe(true);
+  });
+});

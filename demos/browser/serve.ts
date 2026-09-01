@@ -17,17 +17,45 @@ const BUNDLE_ALIASES: Record<string, string> = {
 };
 
 async function buildAssets(): Promise<Map<string, string>> {
-  const result = await Bun.build({
-    entrypoints: [
-      Bun.fileURLToPath(new URL("./app.ts", import.meta.url)),
-      Bun.fileURLToPath(new URL("../../src/workers/worker.ts", import.meta.url)),
-      Bun.fileURLToPath(new URL("./seminr-entry.ts", import.meta.url)),
-      Bun.fileURLToPath(new URL("../lib/print.ts", import.meta.url)),
-    ],
-    target: "browser",
-  });
+  const entrypoints = [
+    Bun.fileURLToPath(new URL("./app.ts", import.meta.url)),
+    Bun.fileURLToPath(new URL("../../src/workers/worker.ts", import.meta.url)),
+    // The barrel, as an absolute entrypoint. Its own artifact is unused — the
+    // served bundle is seminr-entry.js — but naming it here puts it in this
+    // build's module graph, which is what makes `seminr-entry.ts`'s relative
+    // `../../src/index.ts` resolve. Under `bun test` that relative specifier
+    // fails on its own: the bundle builds fine from `bun run`, and inside the
+    // test runner it raises `Could not resolve` unless something else has
+    // already put that module in the graph. tests/browser-compat.test.ts
+    // happens to do so when the whole suite runs, which is why this passed
+    // locally for months and failed the moment CI's file order put
+    // tests/demos.test.ts first. One entrypoint is cheaper than depending on
+    // which test ran before this one.
+    Bun.fileURLToPath(new URL("../../src/index.ts", import.meta.url)),
+    Bun.fileURLToPath(new URL("./seminr-entry.ts", import.meta.url)),
+    Bun.fileURLToPath(new URL("../lib/print.ts", import.meta.url)),
+  ];
+  const result = await Bun.build({ entrypoints, target: "browser" });
   if (!result.success) {
-    throw new AggregateError(result.logs, "Browser demo bundling failed");
+    // Report enough to diagnose from a CI log on a machine you cannot reach.
+    // `AggregateError`'s sub-errors are not printed by every runner, and a bare
+    // "Could not resolve" without the importer, the resolution kind or the
+    // runtime version is not actionable — which is exactly the position a
+    // Bun 1.4.0 Linux-only failure on this build left us in.
+    const detail = result.logs
+      .map((log) => {
+        const l = log as { message?: string; position?: { file?: string; line?: number } };
+        const where = l.position?.file
+          ? ` (${l.position.file}${l.position.line ? `:${l.position.line}` : ""})`
+          : "";
+        return `  - ${l.message ?? String(log)}${where}`;
+      })
+      .join("\n");
+    throw new Error(
+      `Browser demo bundling failed on bun ${Bun.version} (${process.platform}/${process.arch})\n` +
+        `entrypoints:\n${entrypoints.map((e) => `  - ${e}`).join("\n")}\n` +
+        `logs:\n${detail}`,
+    );
   }
   const artifacts = new Map<string, string>();
   for (const artifact of result.outputs) {

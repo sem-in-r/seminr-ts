@@ -81,11 +81,36 @@ export function jacobiEigenSym(m: readonly (readonly number[])[]): EigenSym {
 /**
  * Symmetric matrix power via eigendecomposition: V diag(values^power) V^T
  * (seminr's `%^%` in compute_ten_berge.R).
+ *
+ * **Eigenvalues at the zero threshold are treated as exactly zero, and a
+ * negative power maps them to zero rather than to infinity or NaN.** That is
+ * the Moore-Penrose convention, and it is a deliberate departure from seminr's
+ * `%^%`, which has no such guard. The reason is a real model rather than a
+ * hypothetical: in the C5 higher-order CBSEM fit, `ImageSat` is a second-order
+ * factor over exactly `Image` and `Satisfaction`, so the five latent loading
+ * columns of `L' R^-1 L` in `src/cbsem/tenBerge.ts` span four dimensions and
+ * its smallest eigenvalue is a rounding artefact — measured at +1.2e-16 against
+ * a largest of 4.63. Its *sign* is luck, and three separate perturbations
+ * flipped it during plan 010: delegating the optimizer, delegating the
+ * Cholesky, and the FMA setting inside it. `(-1.2e-16) ** -0.5` is NaN, so the
+ * whole factor-score matrix became NaN on a rounding bit.
+ *
+ * Dropping the direction instead costs nothing measurable. The contribution of
+ * that eigenvector to the ten Berge weights is `||L v|| * lambda^-0.5` =
+ * 1.05e-15 * 9.1e7 = **9.5e-8**, against O(1) from the four real directions and
+ * a fixture tolerance of 5e-5. So the number this guard removes was noise
+ * amplified by 1e8, and R's answer sits within 5e-5 of ours either way.
+ *
+ * The threshold is the standard rank tolerance, `n * eps * max|lambda|`. An
+ * eigenvalue that is genuinely negative — beyond the threshold — is left alone,
+ * so indefiniteness stays visible as a NaN instead of being quietly absorbed.
  */
 export function symMatrixPower(m: readonly (readonly number[])[], power: number): Matrix {
   const n = m.length;
   const { values, vectors } = jacobiEigenSym(m);
-  const powered = values.map((x) => x ** power);
+  const largest = values.reduce((mx, x) => Math.max(mx, Math.abs(x)), 0);
+  const zeroTol = n * Number.EPSILON * largest;
+  const powered = values.map((x) => (Math.abs(x) <= zeroTol ? 0 : x ** power));
   const out = zeros(n, n);
   for (let i = 0; i < n; i++) {
     for (let j = i; j < n; j++) {
