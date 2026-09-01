@@ -1,5 +1,6 @@
 # seminr-ts
 
+[![npm](https://img.shields.io/npm/v/@seminr/core)](https://www.npmjs.com/package/@seminr/core)
 [![CI](https://github.com/sem-in-r/seminr-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/sem-in-r/seminr-ts/actions/workflows/ci.yml)
 
 SEM (Structural Equation Modeling) estimation in TypeScript: PLS-SEM and
