@@ -513,6 +513,12 @@ if (capture) {
     }
     const moves: Move[] = [];
     collectMoves(baseline[name], current[name], name, moves);
+    if (moves.length === 0) {
+      // Diverged on something that is not a number — a version string, a name,
+      // a changed shape. Those are never "within tolerance", so show them.
+      for (const d of diffs) console.log(`      ${d}`);
+      continue;
+    }
     const worstAbs = moves.reduce((w, m) => (m.abs > w.abs ? m : w), moves[0]!);
     const worstRel = moves.reduce((w, m) => (m.rel > w.rel ? m : w), moves[0]!);
     const fields = new Set(moves.map((m) => m.path.replace(/\[\d+\]/g, "[]")));
