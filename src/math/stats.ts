@@ -6,13 +6,14 @@
  * order — and `tests/math/stats.test.ts` asserts that with `Object.is`, not
  * closeness. `quantile` is not, and deliberately so: see its note below.
  *
- * The explicit annotations are load-bearing, not decoration: `@compstats/core`
- * 0.5.0's declarations do not resolve under NodeNext, so without them these
- * three would be `any` in our own published types. See the note in
- * `distributions.ts` and `tests/math/compstats-types.test.ts`.
+ * Imported from `@compstats/core/stats`, the DOM-free entry. The explicit
+ * annotations were load-bearing under 0.5.0, whose declarations did not resolve
+ * under NodeNext; 0.6.0 fixed that and they are now documentation plus a guard
+ * against a future regression. See the note in `distributions.ts` and
+ * `tests/math/compstats-types.test.ts`.
  */
 
-import { mean as csMean, sd as csSd, quantile as csQuantile } from "@compstats/core";
+import { mean as csMean, sd as csSd, quantile as csQuantile } from "@compstats/core/stats";
 
 /** Arithmetic mean, as R's `mean()`. */
 export const mean: (x: readonly number[]) => number = csMean;

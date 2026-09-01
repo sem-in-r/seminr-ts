@@ -23,16 +23,25 @@
  * `noncentralChisqCdf` and `chisqCdf` are R's one `pchisq` split in two, which
  * is how seminr-ts's callers read them.
  *
+ * Imported from `@compstats/core/stats`, the DOM-free entry: 120 KB against the
+ * root entry's 176 KB, and asserted upstream to reach no `plot/` or
+ * `interactive/` module and to name no DOM global. `src/` must stay
+ * runtime-agnostic, so this is the door to use.
+ *
  * **Every delegation here carries an explicit type annotation, on purpose.**
- * `@compstats/core` 0.5.0 ships `.d.ts` files whose relative re-exports have no
+ * `@compstats/core` 0.5.0 shipped `.d.ts` files whose relative re-exports had no
  * file extension (`export { mean } from "./core/arith"`), which Node16/NodeNext
  * module resolution rejects — TS2834. This package resolves modules as NodeNext
  * (it publishes to npm), and `skipLibCheck: true` swallows the error, so every
- * name imported from `@compstats/core` arrives as `any` and would silently
- * infect our own published declarations. Annotating the boundary keeps
- * `@seminr/core/math`'s types exact whatever upstream's packaging does;
- * `tests/math/compstats-types.test.ts` fails if an `any` ever leaks back in.
- * Reported upstream — see plan 010, task 4f.
+ * name arrived as `any` and would silently have infected our own published
+ * declarations. **0.6.0 fixed it** — `pchisq("hello", {}, [], 1, 2, 3)` is now a
+ * compile error here, where under 0.5.0 it was not — so the annotations are no
+ * longer load-bearing. They stay because they cost nothing, they state the
+ * contract at the boundary, and they are what would keep our published types
+ * exact if a future upstream release regressed under `skipLibCheck`.
+ * `tests/math/compstats-types.test.ts` checks the upstream property directly
+ * and keeps the annotation rule behind it. Reported upstream — plan 010, 4f;
+ * their reply is plan 011's `NOTE-for-seminr-ts-2.md` §1.
  */
 
 import {
@@ -42,7 +51,7 @@ import {
   logGamma,
   regularizedGammaP,
   incompleteBeta as csIncompleteBeta,
-} from "@compstats/core";
+} from "@compstats/core/stats";
 
 /** log Gamma(x) for x > 0 (R's `lgamma`). */
 export const lgamma: (x: number) => number = logGamma;

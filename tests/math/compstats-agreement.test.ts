@@ -6,7 +6,7 @@ import {
   logGamma,
   regularizedGammaP,
   incompleteBeta as csIncompleteBeta,
-} from "@compstats/core";
+} from "@compstats/core/stats";
 import {
   normalCdf,
   chisqCdf,

@@ -1,33 +1,43 @@
 import { describe, it, expect } from "bun:test";
 
 /**
- * Source hygiene at the `@compstats/core` boundary: every delegated name must
- * carry an explicit type annotation.
+ * The `@compstats/core` type boundary, checked from both sides.
  *
- * `@compstats/core` 0.5.0 ships `.d.ts` files whose relative re-exports have no
- * file extension (`export { mean } from "./core/arith"`). Node16/NodeNext module
- * resolution — which this package uses, because it publishes to npm — rejects
- * that with TS2834, and `skipLibCheck: true` in tsconfig.json swallows the
- * error instead of reporting it. The result is silent and total: every name
- * imported from `@compstats/core` arrives as `any`. A bare
- * `export const lgamma = logGamma` would then publish `lgamma: any` in
- * `dist/math/index.d.ts`, and `@seminr/core/math` would lose the types its
- * consumers rely on without a single warning.
+ * The history matters for reading what follows. `@compstats/core` 0.5.0 shipped
+ * `.d.ts` files whose relative re-exports had no file extension
+ * (`export { mean } from "./core/arith"`). Node16/NodeNext module resolution —
+ * which this package uses, because it publishes to npm — rejects that with
+ * TS2834, and `skipLibCheck: true` in tsconfig.json swallows the error instead
+ * of reporting it. The result was silent and total: every name imported from
+ * `@compstats/core` arrived as `any`, so `export const lgamma = logGamma` would
+ * have published `lgamma: any` in our own `dist/math/index.d.ts` and stripped
+ * the types off `@seminr/core/math` for its consumers.
  *
- * The fix is one explicit annotation per delegation, and this is the rule that
- * keeps them there. A type-level `IsAny<T>` assertion was tried first and is
- * *not* reliable: with `T = any` the conditional resolves to `any` rather than
- * to a branch, so the assertion passes in exactly the case it exists to catch —
- * verified against a deliberately broken annotation. A textual rule fires every
- * time, and it is the same shape as `tests/ts-native-imports.test.ts`.
+ * 0.6.0 fixed it upstream. Verified here at the bump: under the pinned version
+ * `pchisq("hello", {}, [], 1, 2, 3)` is a compile error (TS2554, "Expected 2-4
+ * arguments, but got 6") where under 0.5.0 it compiled clean.
  *
- * Delete this once upstream ships extensions in its declarations *and* the
- * pinned version requires them — at that point `bun run typecheck` catches a
- * leak on its own.
+ * So there are two properties to hold, and this file checks each where it lives:
+ *
+ * 1. **Upstream still resolves.** The first test reads the installed
+ *    declarations and fails if any relative specifier has lost its extension.
+ *    That is the actual precondition, and a version bump is where it would
+ *    break. `bun run typecheck` cannot see it — `skipLibCheck` is on, and
+ *    turning it off would check every dependency's declarations, which is not a
+ *    practical setting for this repo.
+ * 2. **Our side stays annotated anyway.** The remaining tests keep the
+ *    explicit-annotation rule at the delegation sites. It is no longer
+ *    load-bearing, and it stays because it costs nothing and is what would keep
+ *    our published types exact if upstream ever regressed.
+ *
+ * A type-level `IsAny<T>` assertion was tried first and is *not* reliable: with
+ * `T = any` the conditional resolves to `any` rather than to a branch, so the
+ * assertion passes in exactly the case it exists to catch. A textual rule fires
+ * every time, and it is the same shape as `tests/ts-native-imports.test.ts`.
  */
 
-const IMPORTS_COMPSTATS = /from\s*"@compstats\/core"/;
-const BARE_REEXPORT = /export\s*(?:type\s*)?\{[^}]*\}\s*from\s*"@compstats\/core"/;
+const IMPORTS_COMPSTATS = /from\s*"@compstats\/core(?:\/[\w-]+)?"/;
+const BARE_REEXPORT = /export\s*(?:type\s*)?\{[^}]*\}\s*from\s*"@compstats\/core(?:\/[\w-]+)?"/;
 /** `export const NAME =` with no `: Type` between the name and the `=`. */
 const UNANNOTATED_EXPORT_CONST = /export\s+const\s+([A-Za-z_$][\w$]*)\s*=/g;
 
@@ -43,9 +53,29 @@ async function sourceFiles(): Promise<Array<{ path: string; source: string }>> {
 }
 
 describe("the @compstats/core boundary keeps its types", () => {
+  it("resolves under NodeNext: every relative specifier upstream carries its extension", async () => {
+    const dist = Bun.fileURLToPath(new URL("node_modules/@compstats/core/dist/", repoRoot));
+    const glob = new Bun.Glob("**/*.d.ts");
+    // A relative `from "./x"` or `import("./x")` with no extension is TS2834.
+    const relative = /(?:from|import)\s*\(?\s*"(\.[^"]*)"/g;
+    const offenders: string[] = [];
+    let scanned = 0;
+    for await (const path of glob.scan(dist)) {
+      const source = await Bun.file(dist + path).text();
+      for (const match of source.matchAll(relative)) {
+        scanned++;
+        const specifier = match[1]!;
+        if (!specifier.endsWith(".js")) offenders.push(`${path}: ${specifier}`);
+      }
+    }
+    // Guard the guard: a scan that found nothing would pass vacuously.
+    expect(scanned).toBeGreaterThan(100);
+    expect(offenders).toEqual([]);
+  });
+
   it("re-exports nothing from @compstats/core directly", async () => {
-    // A bare re-export publishes upstream's (currently `any`) type verbatim and
-    // gives no place to hang an annotation.
+    // A bare re-export publishes upstream's type verbatim and gives no place to
+    // hang an annotation.
     const offenders = (await sourceFiles())
       .filter(({ source }) => BARE_REEXPORT.test(source))
       .map(({ path }) => path);
@@ -63,15 +93,17 @@ describe("the @compstats/core boundary keeps its types", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("still has delegations to guard", async () => {
+  it("still has delegations to guard, and reaches them through the DOM-free entry", async () => {
     // If this drops to zero the rule above passes vacuously, which would hide a
-    // future delegation added without an annotation.
-    const delegating = (await sourceFiles()).filter(({ source }) =>
-      IMPORTS_COMPSTATS.test(source),
-    );
+    // future delegation added without an annotation. The subpath is asserted
+    // too: `src/` must stay runtime-agnostic, and the root entry carries the
+    // canvas and interactive layers.
+    const delegating = (await sourceFiles()).filter(({ source }) => IMPORTS_COMPSTATS.test(source));
     expect(delegating.map(({ path }) => path).sort()).toEqual([
       "src/math/distributions.ts",
       "src/math/stats.ts",
     ]);
+    const rootEntry = delegating.filter(({ source }) => /from\s*"@compstats\/core"/.test(source));
+    expect(rootEntry.map(({ path }) => path)).toEqual([]);
   });
 });
