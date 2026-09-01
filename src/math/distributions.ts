@@ -98,13 +98,20 @@ export function noncentralChisqCdf(x: number, df: number, ncp: number): number {
  * the worst case, which is the noncentral series itself.
  *
  * **What it changes in practice, stated concretely** (plan 011, slice E): on the
- * ECSI model the model chi-square p-value goes from exactly 0 to
- * 2.9855443664951668e-30, against R's 2.9855443665871887e-30. Every other fit
- * measure moves by at most 5.6e-16. Note that lavaan itself forms these as
- * `1 - pchisq(...)` and so reports 0 here, which is why our fixtures store 0:
- * this is a deliberate departure from the reference, in the direction of the
- * number being right. Nothing that reads a p-value as a decision at 0.05, 0.01
- * or 0.001 can tell the difference.
+ * ECSI model the chi-square p-value goes from **exactly 0** to a real value. At
+ * lavaan's own chi-square of 484.921572960681 on 178 df,
+ *
+ *     chisqUpperTail(484.921572960681, 178) = 2.98554436658730989e-30
+ *     R's pchisq(..., lower.tail = FALSE)   = 2.98554436658718868e-30
+ *
+ * — agreeing to **4.1e-14 relative**, where `1 - chisqCdf(...)` returns 0 and
+ * has no digits to agree with. `tests/math/distributions.test.ts` pins both.
+ * Every other fit measure moves by at most 5.6e-16.
+ *
+ * Note that lavaan itself forms these as `1 - pchisq(...)` and so reports 0
+ * here, which is why our fixtures store 0: this is a deliberate departure from
+ * the reference, in the direction of the number being right. Nothing that reads
+ * a p-value as a decision at 0.05, 0.01 or 0.001 can tell the difference.
  */
 export function chisqUpperTail(x: number, df: number): number {
   return pchisq(x, df, 0, { lowerTail: false });

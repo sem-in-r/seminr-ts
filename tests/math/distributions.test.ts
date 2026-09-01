@@ -229,6 +229,22 @@ describe("upper-tail chi-square", () => {
     }
   });
 
+  it("pins the ECSI chi-square p-value the distributions docstring quotes", () => {
+    // The docstring in src/math/distributions.ts states this number as the
+    // concrete effect of the upper-tail change. It shipped once stating a value
+    // computed at *our* chi-square beside R's computed at *lavaan's* — two
+    // different inputs presented as one comparison. Pinned here so the quoted
+    // figure is like-for-like and cannot drift again.
+    //
+    // R 4.5.3: pchisq(484.921572960681, 178, lower.tail = FALSE)
+    const R = 2.98554436658718868e-30;
+    const ours = chisqUpperTail(484.921572960681, 178);
+    expect(ours).toBe(2.98554436658730989e-30);
+    expect(Math.abs(ours / R - 1)).toBeLessThan(5e-14);
+    // And the point of the exercise: the subtraction has nothing to offer here.
+    expect(1 - chisqCdf(484.921572960681, 178)).toBe(0);
+  });
+
   it("beats `1 - lower` where the subtraction cannot help", () => {
     // The far right tail, where 1 - lower loses every digit it has: the lower
     // tail is 1 to the last bit, so the subtraction returns exactly 0 while the
