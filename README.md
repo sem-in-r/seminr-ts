@@ -12,7 +12,8 @@ the simplePLS estimation algorithm, PLSc consistency correction, bootstrapping,
 interaction terms, higher-order constructs, and covariance-based estimation
 (CFA and full CBSEM). Where seminr delegates covariance-based estimation to
 [lavaan](https://lavaan.ugent.be), seminr-ts implements the maximum-likelihood
-estimator itself (LISREL matrices, analytic gradient, BFGS) and matches
+estimator itself — the LISREL parameterization, the discrepancy function and its
+analytic gradient — minimizing it with a port of R's own `optim`, and matches
 lavaan's output.
 
 It serves two kinds of users:
