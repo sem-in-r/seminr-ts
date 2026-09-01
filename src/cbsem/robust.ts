@@ -3,7 +3,7 @@
  * continuous complete data, single group, no meanstructure:
  * se = "robust.huber.white" (sandwich), test = "yuan.bentler.mplus".
  *
- * Provenance (digested in PLAN.cbsem-robust.md F1):
+ * Provenance (digested in 004-PLAN-cbsem-robust/PLAN.md F1):
  * - observed information = numeric Hessian of the analytic gradient
  *   (lav_model_hessian.R:3-129: 4-point central difference, h = 1e-6,
  *   symmetrized)

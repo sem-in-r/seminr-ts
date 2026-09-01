@@ -1,6 +1,6 @@
 # seminr-ts — needed / potential follow-ups
 
-> Deferred work and known gaps vs seminr. Full parity reassessment vs seminr's NAMESPACE done 2026-07-04; every non-plotting exported feature shipped as of branch `parity` (`.claude/plans/PLAN.parity.md`) — what remains below is deliberately deferred or out of scope. Update this file when an item ships or a new deferral is decided.
+> Deferred work and known gaps vs seminr. Full parity reassessment vs seminr's NAMESPACE done 2026-07-04; every non-plotting exported feature shipped as of branch `parity` (`.claude/plans/006-PLAN-parity/PLAN.md`) — what remains below is deliberately deferred or out of scope. Update this file when an item ships or a new deferral is decided.
 
 ## CBSEM/CFA follow-ups
 
@@ -19,6 +19,27 @@
 
 - **Flat typed-array (Float64Array) matrix storage** — deliberately deferred (plan Q2). After the `performance` branch landed the algorithmic wins (single-pass column stats, iteration-invariant outer-mode preparation, in-place standardization, shared design-matrix factorization), the remaining simplePLS loop cost is fundamental `number[][]` matmul/standardize arithmetic. Flat storage would rewrite every matrix consumer for an unproven constant factor; revisit only if a future profile shows matmul dominating a workload that matters. `benchmark/equivalence.ts` (tolerance-0 harness) is the safety net if attempted.
 - **CBSEM/CFA estimator performance** — out of the `performance` branch's scope (own optimizer/gradient code paths); profile separately if CBSEM bootstrap-style workloads ever appear.
+
+## Math layer — `@compstats/core` delegation (branch `refactor-compstatslib`, plan `.claude/plans/010-PLAN-compstatslib/PLAN.md`)
+
+- **Retire the extras-facing `@seminr/core/math` exports** — all six have an R-pinned counterpart in `@compstats/core` 0.5.0, but they fall into two very different groups, and only the first can actually be deleted:
+
+  | Symbol | Uses inside `seminr-ts/src` | Delegated by plan 010? | `@compstats/core` counterpart | Extras call sites |
+  | --- | --- | --- | --- | --- |
+  | `tCdf` | **0** | yes (slice 1) | `pt(x, df)` (root) | `src/helpers.ts` |
+  | `jacobiEigenSym` | **0** | only if slice 2 ships | `eigenSymmetric` (`/linalg`) | `demos/primer-chap4.ts` |
+  | `quantile` | 14 uses / 4 files | yes (slice 1) | `quantile` (root) | `src/helpers.ts`, `src/featureCta.ts`, `src/featureCoa.ts`, `src/plotting/results.ts` |
+  | `solve` | 18 uses / 11 files | no — hot paths stay ours | `solve(a, b)` (`/linalg`) | `src/featureFimix.ts`, `src/featureCipma.ts` |
+  | `colCor` | 20 uses / 7 files | **no — declined** | `cor(x, y)` (`/linalg`) | `src/featureCongruence.ts`, `tests/congruence.test.ts` |
+  | `colCov` | 4 uses / 2 files | **no — declined** | `cov(x, y)` (`/linalg`) | `src/featureCta.ts`, `tests/cta.test.ts` |
+
+  Only `tCdf` and `jacobiEigenSym` have no internal caller, so only those two can go implementation and all. For the other four, "retire" means **removing the export from the `./math` facade** — `seminr-ts` still calls them internally, and `colCor`/`colCov` keep their hand-written implementations for good (plan 010 F7: they run inside the PLS iteration inside every bootstrap replication, where the row-major → column-major conversion costs more than the operation).
+
+  **Gated on two things, in order: (1) the plan-010 refactor lands on `main`, and (2) `seminrExtras-ts` migrates these call sites to `@compstats/core` directly and releases.** Deleting them before extras moves breaks a published downstream package. `quantile` and `tCdf` are scalar swaps for extras; the other four hand back a column-major `Matrix`, so extras converts at those call sites or adopts the type — its decision, not ours.
+
+  Removing exported names from `@seminr/core/math` is a **breaking change** — it needs a major bump and a deprecation notice in the subpath's docstring one release ahead. The subpath does *not* become empty (the matrix vocabulary and the CBSEM primitives stay), so it survives the removal.
+
+- **Deferred with the plan (not scheduled)**: the column-major representation migration (`NamedMatrix`/`nmSet` → `@compstats/core`'s `Matrix`) — see plan 010 slice 3 for the cost, which is a breaking change on both the root barrel and `./math`. Also deferred: replacing normal-equations OLS with compstats' QR-based `lm` in `src/specify/interactions.ts` and `src/predict/chunk.ts` (lands *closer* to R but moves numbers that currently pass at 1e-5 — a parity change, not a refactor), and swapping `src/plot/charts/predictError.ts`'s direct kernel sum for compstats' FFT-binned `kernelDensity` (different binning, and the plot fixture is byte-compared).
 
 ## Out of scope (both estimators) — will have to get done eventually
 
@@ -43,4 +64,4 @@
 
 ---
 
-Last updated: 2026-07-11 (branch `plot`: plotting layer shipped; residual plotting deferrals recorded)
+Last updated: 2026-09-01 (branch `refactor-compstatslib`: `@compstats/core` delegation deferrals recorded)

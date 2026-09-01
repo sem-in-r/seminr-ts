@@ -4,7 +4,7 @@ TypeScript implementation of SEM (Structural Equation Modeling) estimation — P
 
 ## Project Status
 
-PLS implementation complete (plan + seminr reference digest: `.claude/plans/PLAN.research-seminr.md`). CBSEM/CFA implementation complete on branch `cbsem` (plan + lavaan estimation digest: `.claude/plans/PLAN.cbsem.md`, referenced from `CLAUDE.local.md`). Plotting layer complete on branch `plot` (plan: `.claude/plans/PLAN.plot.md`). Read the relevant plan before making changes. Deferred work and known gaps are consolidated in `.claude/FUTURE.md` — check it before proposing new scope, and update it when deferring or shipping an item.
+PLS implementation complete (plan + seminr reference digest: `.claude/plans/001-PLAN-research-seminr/PLAN.md`). CBSEM/CFA implementation complete on branch `cbsem` (plan + lavaan estimation digest: `.claude/plans/002-PLAN-cbsem/PLAN.md`, referenced from `CLAUDE.local.md`). Plotting layer complete on branch `plot` (plan: `.claude/plans/009-PLAN-plot/PLAN.md`). Read the relevant plan before making changes. Deferred work and known gaps are consolidated in `.claude/FUTURE.md` — check it before proposing new scope, and update it when deferring or shipping an item.
 
 ## Scope (implemented)
 
@@ -23,7 +23,7 @@ PLS implementation complete (plan + seminr reference digest: `.claude/plans/PLAN
 
 A completed Python port lives in the sibling repo `../seminr-py/` — many of its design decisions were made anticipating reuse here, so check its plans (`../seminr-py/.claude/plans/`) before re-deriving a solution the Python port already settled.
 
-The R source of record is `../seminr/R/`. Key files: `estimate_simplePLS.R` (core algorithm), `estimate_pls.R`, `estimate_bootstrap.R`, `specify_constructs.R`, `specify_interactions.R`, `feature_higher_order.R`; for CBSEM: `estimate_cbsem.R`, `lavaan_syntax.R`, `compute_ten_berge.R` (the ML estimator itself replicates lavaan — formulas digested with file:line refs in `.claude/plans/PLAN.cbsem.md`). Numerical parity with seminr on the bundled `mobi` dataset is the acceptance bar — golden fixtures are generated from R (see plans; CBSEM fixtures use BFGS-polished lavaan optima, see plan Q7).
+The R source of record is `../seminr/R/`. Key files: `estimate_simplePLS.R` (core algorithm), `estimate_pls.R`, `estimate_bootstrap.R`, `specify_constructs.R`, `specify_interactions.R`, `feature_higher_order.R`; for CBSEM: `estimate_cbsem.R`, `lavaan_syntax.R`, `compute_ten_berge.R` (the ML estimator itself replicates lavaan — formulas digested with file:line refs in `.claude/plans/002-PLAN-cbsem/PLAN.md`). Numerical parity with seminr on the bundled `mobi` dataset is the acceptance bar — golden fixtures are generated from R (see plans; CBSEM fixtures use BFGS-polished lavaan optima, see plan Q7).
 
 ## Development
 
@@ -34,5 +34,11 @@ The R source of record is `../seminr/R/`. Key files: `estimate_simplePLS.R` (cor
 
 ## Conventions
 
-- Plans live in `.claude/plans/` (gitignored, synced across machines via Sideways).
+- Plans live in `.claude/plans/` (gitignored, synced across machines via Sideways), **one folder per work stream** named `NNN-PURPOSE-slug`:
+  - `NNN` — zero-padded sequence starting at `001`, strictly increasing and never reused. Take the next unused number by listing the directory.
+  - `PURPOSE` — uppercase tag for the kind of document that started the stream (`PLAN`, `BUGFIX`, `REFACTOR`, `HOTFIX`, …). It does not change when a second kind of document joins the folder.
+  - `slug` — short kebab-case name, normally from the branch name (`/` → `-`, owner prefixes dropped).
+  - The main document takes the name of its kind (`PLAN.md`, `BUGFIX.md`). When a folder holds two or more, prefix each with a letter giving the reading order (`a-PLAN.md`, `b-BUGFIX.md`); a lone document takes no letter. Supporting files keep a kind tag and no letter (`REPORT-performance.html`, `PROBE-scalar.ts`, `SKETCHES.html`), with a suffix when a folder holds several of one kind.
+  - A reference inside one folder uses the bare filename; a reference to another folder uses the full path from the repo root.
+  - Migrated from the earlier flat `PLAN.<name>.md` layout on 2026-09-01 (see `.claude/plans/010-PLAN-compstatslib/PLAN.md`, "Plan-directory migration", for the old → new table).
 - No AI coauthor references in commits, PRs, or issues.

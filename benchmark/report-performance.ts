@@ -12,7 +12,7 @@
  * Defaults: --baseline 604d329 (the branch-cut commit), --after = current HEAD.
  * Output: benchmark/report-performance.html (git-ignored, machine-specific);
  * override with --out. The `performance` branch's final report was archived
- * once to .claude/plans/PLAN.performance-report.html beside its plan.
+ * once to .claude/plans/008-PLAN-performance/REPORT-performance.html beside its plan.
  */
 import { $ } from "bun";
 import { SEMINR_REFERENCE, SEMINR_ENV } from "./reference-seminr.ts";
