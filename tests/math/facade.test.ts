@@ -50,6 +50,8 @@ const EXPORTS = [
   "normalCdf",
   "chisqCdf",
   "noncentralChisqCdf",
+  "chisqUpperTail",
+  "noncentralChisqUpperTail",
   // stats.ts
   "mean",
   "sd",
@@ -143,6 +145,11 @@ describe("@seminr/core/math facade", () => {
     expect(math.normalCdf(0)).toBeCloseTo(0.5, 12);
     expect(math.chisqCdf(1, 1)).toBeGreaterThan(0);
     expect(math.noncentralChisqCdf(1, 1, 0.5)).toBeGreaterThan(0);
+    // The upper tail is its own calculation, not `1 - lower`: in the far tail
+    // the subtraction has no digits left to give.
+    expect(math.chisqUpperTail(1000, 300)).toBeGreaterThan(0);
+    expect(1 - math.chisqCdf(1000, 300)).toBe(0);
+    expect(math.noncentralChisqUpperTail(1, 1, 0.5)).toBeGreaterThan(0);
 
     // stats
     expect(math.mean(y)).toBe(2.5);

@@ -81,3 +81,39 @@ export function chisqCdf(x: number, df: number): number {
 export function noncentralChisqCdf(x: number, df: number, ncp: number): number {
   return pchisq(x, df, ncp);
 }
+
+/**
+ * Central chi-square **upper** tail (R's `pchisq(x, df, lower.tail = FALSE)`).
+ *
+ * A separate calculation, not `1 - chisqCdf(x, df)`, and the difference is the
+ * point. A lower tail sitting just below 1 carries absolute error that the
+ * subtraction then divides by a probability as small as 1e-10, so every digit
+ * of a small right-tail probability comes from the subtraction rather than from
+ * the series. In the far tail the subtraction has no digits at all to give:
+ * `1 - pchisq(1000, 300)` is exactly 0, where the probability is 3.7e-76.
+ *
+ * Measured in plan 010 (task 1c): R's own upper tail differs from `1 - lower`
+ * at 31 of 64 grid points in the RMSEA regime, and over that grid it improves
+ * the median error against R by 5×, from 5.08e-14 to 1.06e-14. It does not move
+ * the worst case, which is the noncentral series itself.
+ *
+ * **What it changes in practice, stated concretely** (plan 011, slice E): on the
+ * ECSI model the model chi-square p-value goes from exactly 0 to
+ * 2.9855443664951668e-30, against R's 2.9855443665871887e-30. Every other fit
+ * measure moves by at most 5.6e-16. Note that lavaan itself forms these as
+ * `1 - pchisq(...)` and so reports 0 here, which is why our fixtures store 0:
+ * this is a deliberate departure from the reference, in the direction of the
+ * number being right. Nothing that reads a p-value as a decision at 0.05, 0.01
+ * or 0.001 can tell the difference.
+ */
+export function chisqUpperTail(x: number, df: number): number {
+  return pchisq(x, df, 0, { lowerTail: false });
+}
+
+/**
+ * Noncentral chi-square **upper** tail
+ * (R's `pchisq(x, df, ncp, lower.tail = FALSE)`). See {@link chisqUpperTail}.
+ */
+export function noncentralChisqUpperTail(x: number, df: number, ncp: number): number {
+  return pchisq(x, df, ncp, { lowerTail: false });
+}

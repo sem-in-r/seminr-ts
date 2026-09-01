@@ -51,6 +51,8 @@ export {
   normalCdf,
   chisqCdf,
   noncentralChisqCdf,
+  chisqUpperTail,
+  noncentralChisqUpperTail,
 } from "./distributions.ts";
 
 // Statistical primitives matching R semantics (mean/sd/cov/cor/quantile, standardization)
