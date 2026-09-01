@@ -101,11 +101,18 @@ export function noncentralChisqCdf(x: number, df: number, ncp: number): number {
  * ECSI model the chi-square p-value goes from **exactly 0** to a real value. At
  * lavaan's own chi-square of 484.921572960681 on 178 df,
  *
- *     chisqUpperTail(484.921572960681, 178) = 2.98554436658730989e-30
- *     R's pchisq(..., lower.tail = FALSE)   = 2.98554436658718868e-30
+ *     chisqUpperTail(484.921572960681, 178) = 2.98554436658731e-30
+ *     R's pchisq(..., lower.tail = FALSE)   = 2.9855443665871887e-30
  *
  * — agreeing to **4.1e-14 relative**, where `1 - chisqCdf(...)` returns 0 and
  * has no digits to agree with. `tests/math/distributions.test.ts` pins both.
+ *
+ * Those are the **shortest round-tripping spellings**, which is what
+ * `console.log` prints and therefore what a reader checking this paragraph will
+ * see. R prints the same two doubles at `options(digits = 17)` as
+ * `2.98554436658730989e-30` and `2.98554436658718868e-30`; the pairs are equal
+ * as doubles, not merely close, and the test asserts that rather than leaving
+ * the reader to wonder whether the docstring or the code is wrong.
  * Every other fit measure moves by at most 5.6e-16.
  *
  * Note that lavaan itself forms these as `1 - pchisq(...)` and so reports 0

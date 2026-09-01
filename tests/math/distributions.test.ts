@@ -241,6 +241,15 @@ describe("upper-tail chi-square", () => {
     const ours = chisqUpperTail(484.921572960681, 178);
     expect(ours).toBe(2.98554436658730989e-30);
     expect(Math.abs(ours / R - 1)).toBeLessThan(5e-14);
+
+    // R prints these at options(digits = 17); JavaScript prints the shortest
+    // round-tripping spelling, which is what a reader running the function sees
+    // and what the docstring therefore quotes. The two spellings are the same
+    // double in each case. These assertions look tautological and are not —
+    // they are the ones a reader confused by the mismatch will actually run.
+    expect(2.98554436658730989e-30).toBe(2.98554436658731e-30);
+    expect(2.98554436658718868e-30).toBe(2.9855443665871887e-30);
+    expect(String(ours)).toBe("2.98554436658731e-30");
     // And the point of the exercise: the subtraction has nothing to offer here.
     expect(1 - chisqCdf(484.921572960681, 178)).toBe(0);
   });
