@@ -50,6 +50,10 @@ import type { NamedMatrix } from "../src/math/matrix.ts";
 const repoRoot = new URL("..", import.meta.url).pathname;
 const BASELINE_PATH = `${repoRoot}benchmark/equivalence-baseline.json`;
 const capture = Bun.argv.includes("--capture");
+/** Report per-scenario move counts and worst absolute/relative deltas instead
+ *  of the first N textual diffs: `--summary`. Use when a slice is expected to
+ *  move numbers and the question is how far, not whether. */
+const summary = Bun.argv.includes("--summary");
 /** Max reported diffs per scenario: `--limit N` (default 5). */
 const diffLimit = (() => {
   const i = Bun.argv.indexOf("--limit");
@@ -417,6 +421,40 @@ function run(): Record<string, unknown> {
   return out;
 }
 
+/** One numeric field that moved between baseline and current. */
+interface Move {
+  path: string;
+  from: number;
+  to: number;
+  abs: number;
+  rel: number;
+}
+
+/** Collect every moved number (rather than the first few differing paths). */
+function collectMoves(a: unknown, b: unknown, path: string, out: Move[]): void {
+  if (a === b) return;
+  if (typeof a === "number" && typeof b === "number") {
+    const abs = Math.abs(a - b);
+    out.push({ path, from: a, to: b, abs, rel: b === 0 ? abs : abs / Math.abs(b) });
+    return;
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return;
+    for (let i = 0; i < a.length; i++) collectMoves(a[i], b[i], `${path}[${i}]`, out);
+    return;
+  }
+  if (a && b && typeof a === "object" && typeof b === "object") {
+    for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+      collectMoves(
+        (a as Record<string, unknown>)[k],
+        (b as Record<string, unknown>)[k],
+        `${path}.${k}`,
+        out,
+      );
+    }
+  }
+}
+
 function diffPaths(a: unknown, b: unknown, path: string, out: string[], limit = 5): void {
   if (out.length >= limit) return;
   if (a === b) return;
@@ -465,11 +503,27 @@ if (capture) {
     diffPaths(baseline[name], current[name], name, diffs, diffLimit);
     if (diffs.length === 0) {
       console.log(`  ✓ ${name}`);
-    } else {
-      failed++;
-      console.log(`  ✗ ${name}`);
-      for (const d of diffs) console.log(`      ${d}`);
+      continue;
     }
+    failed++;
+    console.log(`  ✗ ${name}`);
+    if (!summary) {
+      for (const d of diffs) console.log(`      ${d}`);
+      continue;
+    }
+    const moves: Move[] = [];
+    collectMoves(baseline[name], current[name], name, moves);
+    const worstAbs = moves.reduce((w, m) => (m.abs > w.abs ? m : w), moves[0]!);
+    const worstRel = moves.reduce((w, m) => (m.rel > w.rel ? m : w), moves[0]!);
+    const fields = new Set(moves.map((m) => m.path.replace(/\[\d+\]/g, "[]")));
+    console.log(`      ${moves.length} number(s) moved across ${fields.size} field shape(s)`);
+    console.log(
+      `      worst |Δ| = ${worstAbs.abs.toExponential(2)} at ${worstAbs.path} (${worstAbs.from} → ${worstAbs.to})`,
+    );
+    console.log(
+      `      worst relΔ = ${worstRel.rel.toExponential(2)} at ${worstRel.path} (${worstRel.from} → ${worstRel.to})`,
+    );
+    for (const f of [...fields].sort()) console.log(`        · ${f}`);
   }
   console.log(
     failed === 0
