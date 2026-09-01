@@ -129,26 +129,37 @@ describe("quantile (R type-7)", () => {
  * they replaced. `quantile` is not — that swap deliberately moves the last bit,
  * and R decides where it should land.
  */
+const QUANTILE_SAMPLE: number[] = JSON.parse(
+  await Bun.file(new URL("../fixtures/data/quantile-sample.json", import.meta.url)).text(),
+) as number[];
+
 describe("delegated summaries on a bootstrap-shaped sample", () => {
-  const N = 500;
-  const sample: number[] = (() => {
-    // mulberry32, inlined so this file does not depend on the bootstrap module.
-    let a = 20260901 >>> 0;
-    const rng = () => {
-      a = (a + 0x6d2b79f5) >>> 0;
-      let t = a;
-      t = Math.imul(t ^ (t >>> 15), t | 1);
-      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-    const out: number[] = [];
-    for (let i = 0; i < N; i++) {
-      const u1 = Math.max(rng(), 1e-12);
-      const u2 = rng();
-      out.push(0.42 + 0.085 * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2));
-    }
-    return out;
-  })();
+  /**
+   * Read from a fixture rather than regenerated, and that is load-bearing.
+   *
+   * It was originally built here by mulberry32 plus Box-Muller. `Math.log` and
+   * `Math.cos` are **not** correctly rounded — IEEE-754 requires it of `sqrt`
+   * and the four arithmetic operations, not of the transcendentals — so every
+   * libm gives slightly different last bits and the sample differed by platform.
+   * Most assertions below survived that, because they carry a tolerance. The
+   * count assertions did not: `moved` came out 227 on macOS and **228 on
+   * Linux**, and CI caught it on the 3-OS matrix.
+   *
+   * Loosening those counts to a range was the obvious fix and the wrong one —
+   * the exact counts are the evidence this file exists to record, and a range
+   * records nothing. Regenerating the sample from arithmetic only (Irwin-Hall
+   * in place of Box-Muller) was tried and is worse on the merits: it is bounded
+   * and more concentrated, so only 4 of the 7 probabilities land on R's exact
+   * double instead of 6, only 1 of the 5 spot checks exercises the difference
+   * instead of 5, and 2 of the round probabilities start moving, which destroys
+   * the point of the sweep.
+   *
+   * So the sample is pinned as data. Every R reference below was generated from
+   * exactly these 500 doubles, JSON round-trips a double exactly, and the file
+   * is now identical on every platform by construction.
+   */
+  const sample = QUANTILE_SAMPLE;
+  const N = sample.length;
 
   /** The retired `mean`: a left fold from 0, then one division. */
   const legacyMean = (x: readonly number[]): number => {
