@@ -20,7 +20,7 @@
 - **Flat typed-array (Float64Array) matrix storage** — deliberately deferred (plan Q2). After the `performance` branch landed the algorithmic wins (single-pass column stats, iteration-invariant outer-mode preparation, in-place standardization, shared design-matrix factorization), the remaining simplePLS loop cost is fundamental `number[][]` matmul/standardize arithmetic. Flat storage would rewrite every matrix consumer for an unproven constant factor; revisit only if a future profile shows matmul dominating a workload that matters. `benchmark/equivalence.ts` (tolerance-0 harness) is the safety net if attempted.
 - **CBSEM/CFA estimator performance** — out of the `performance` branch's scope (own optimizer/gradient code paths); profile separately if CBSEM bootstrap-style workloads ever appear.
 
-## Math layer — `@compstats/core` delegation (branch `refactor-compstatslib`, plans `.claude/plans/010-PLAN-compstatslib/PLAN.md` and `011-PLAN-compstats-0.6/PLAN.md`)
+## Math layer — `@compstats/core` delegation (**shipped in v0.4.0**, merge `d00f9af`; plans `.claude/plans/010-PLAN-compstatslib/PLAN.md` and `011-PLAN-compstats-0.6/PLAN.md`)
 
 > Plan 010 adopted 0.5.0's scalar layer and declined the rest. Plan 011 took 0.6.0, which answered
 > the report we sent upstream: the optimizer became R's own `vmmin` and was adopted, the linear
@@ -67,6 +67,8 @@
   The two control-block traps recorded by plan 010 still stand and are now in `src/math/optimize.ts`'s docstring: R's `maxit` default is 100 and its `reltol` default is `sqrt(eps)` = 1.49e-8, and inheriting the second stops the ECSI fit 21 iterations early while still reporting `convergence: 0`. `bfgs` sets all of them explicitly and **throws** on the retired `gradTol`/`stallGradTol` rather than ignoring them.
 
 - **The column-major representation migration (slice 3) — now priced, still not scheduled.**
+
+  **Re-priced after v0.4.0 shipped — read plan 011's G7 and G8 before acting on any of the numbers below.** The conversion boundary turned out to be avoidable entirely (a row-major caller adopts its buffer transposed, no reordering), and the speed gain is the representation rather than upstream's arithmetic, which is a tie. The remaining case for adopting their ops is reach — `qr`, `lm`, `solve`, `chol` over held buffers — not speed.
 
   *What it would buy*, measured in plan 011 rather than assumed: **`matmul` is 50.9% of a 200-replication bootstrap** (314.5 ms of 618 ms, 6 029 calls), and compstats' `matmul` over an adopted buffer is **1.4× to 2.4× faster on our exact shapes** — and **bit-identical** to ours (3 111 cells checked with `Object.is`, zero differences: our loop skips zero multipliers and accumulates over the inner index in the same order). That prices the migration at roughly **20-25% of bootstrap wall clock with no numeric movement**.
 
