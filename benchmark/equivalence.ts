@@ -39,12 +39,22 @@ import { summarizePls } from "../src/evaluate/summarizePls.ts";
 import { predictPls } from "../src/predict/predictPls.ts";
 import { predict } from "../src/predict/predict.ts";
 import { estimatePlsMga } from "../src/mga/estimatePlsMga.ts";
+import { estimateCbsem, type CbsemModel } from "../src/cbsem/estimateCbsem.ts";
+import { estimateCfa, type CfaModel } from "../src/cbsem/estimateCfa.ts";
+import { summarizeCbsem, summarizeCfa } from "../src/cbsem/summarize.ts";
+import { associations, itemErrors } from "../src/specify/associations.ts";
+import { higherReflective } from "../src/specify/reflective.ts";
 import { getColumn, type Dataset } from "../src/estimate/data.ts";
 import type { NamedMatrix } from "../src/math/matrix.ts";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
 const BASELINE_PATH = `${repoRoot}benchmark/equivalence-baseline.json`;
 const capture = Bun.argv.includes("--capture");
+/** Max reported diffs per scenario: `--limit N` (default 5). */
+const diffLimit = (() => {
+  const i = Bun.argv.indexOf("--limit");
+  return i >= 0 ? Number(Bun.argv[i + 1]) : 5;
+})();
 
 // ---------------------------------------------------------------------------
 // Models (ECSI on mobi, same structures as benchmark/run.ts)
@@ -255,6 +265,140 @@ const scenarios: Record<string, () => unknown> = {
 };
 
 // ---------------------------------------------------------------------------
+// CBSEM / CFA scenarios (the estimator runs once — no bootstrap loop, so the
+// whole estimation is serialized: unstandardized matrices, standardized
+// solution, fit measures, the robust layer, ten Berge scores and the summary
+// tables that carry the standard errors).
+// ---------------------------------------------------------------------------
+
+const cbReflectiveMm = constructs(
+  reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
+  reflective("Quality", multiItems("PERQ", [1, 2, 3, 4, 5, 6, 7])),
+  reflective("Value", multiItems("PERV", [1, 2])),
+  reflective("Satisfaction", multiItems("CUSA", [1, 2, 3])),
+  reflective("Complaints", singleItem("CUSCO")),
+  reflective("Loyalty", multiItems("CUSL", [1, 2, 3])),
+);
+const cbEcsiSm = relationships(
+  paths(["Image", "Quality"], ["Value", "Satisfaction"]),
+  paths(["Value", "Satisfaction"], ["Complaints", "Loyalty"]),
+  paths("Complaints", "Loyalty"),
+);
+const cbEcsiAm = associations(itemErrors(["PERQ1", "PERQ2"], "IMAG1"));
+
+const cfaDocMm = constructs(
+  reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
+  reflective("Expectation", multiItems("CUEX", [1, 2, 3])),
+  reflective("Quality", multiItems("PERQ", [1, 2, 3, 4, 5, 6, 7])),
+);
+const cfaDocAm = associations(itemErrors(["PERQ1", "PERQ2"], "CUEX3"), itemErrors("IMAG1", "CUEX2"));
+
+const cbIntxnPartialMm = constructs(
+  reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
+  reflective("Expectation", singleItem("CUEX3")),
+  reflective("Value", multiItems("PERV", [1, 2])),
+  reflective("Satisfaction", multiItems("CUSA", [1, 2, 3])),
+);
+const cbIntxnSm = relationships(
+  paths(["Image", "Expectation", "Value", "Image*Expectation"], "Satisfaction"),
+);
+
+const cbHocMm = constructs(
+  reflective("Image", multiItems("IMAG", [1, 2, 3, 4, 5])),
+  reflective("Satisfaction", multiItems("CUSA", [1, 2, 3])),
+  higherReflective("ImageSat", ["Image", "Satisfaction"]),
+  reflective("Expectation", multiItems("CUEX", [1, 2, 3])),
+  reflective("Loyalty", multiItems("CUSL", [1, 2, 3])),
+);
+const cbHocSm = relationships(paths(["ImageSat", "Satisfaction", "Expectation"], "Loyalty"));
+
+function estimationPayload(model: CbsemModel | CfaModel): Record<string, unknown> {
+  const { fit, std, fitMeasures: fm, robust, n, estimator } = model.estimation;
+  return {
+    n,
+    estimator,
+    theta: fit.theta,
+    objective: fit.objective,
+    iterations: fit.iterations,
+    converged: fit.converged,
+    unstd: {
+      lambda: fit.matrices.lambda,
+      beta: fit.matrices.beta ?? null,
+      psi: fit.matrices.psi,
+      theta: fit.matrices.theta,
+    },
+    std: {
+      lambda: std.lambda,
+      beta: std.beta ?? null,
+      psi: std.psi,
+      theta: std.theta,
+      corLv: std.corLv,
+      r2: std.r2,
+      observedSd: std.observedSd,
+      latentSd: std.latentSd,
+    },
+    fitMeasures: fm,
+    robust: robust
+      ? {
+          se: robust.se,
+          vcov: robust.vcov,
+          traceH1: robust.traceH1,
+          traceH0: robust.traceH0,
+          traceUGamma: robust.traceUGamma,
+          scalingFactor: robust.scalingFactor,
+          baselineScalingFactor: robust.baselineScalingFactor,
+          scalingFactorH1: robust.scalingFactorH1,
+          scalingFactorH0: robust.scalingFactorH0,
+        }
+      : null,
+    factorLoadings: nm(model.factorLoadings),
+    itemWeights: nm(model.itemWeights),
+    constructScores: model.constructScores,
+    lavaanModel: model.lavaanModel,
+  };
+}
+
+const cbsemPayload = (model: CbsemModel) => ({
+  ...estimationPayload(model),
+  pathCoef: nm(model.pathCoef),
+  summary: summarizeCbsem(model),
+});
+const cfaPayload = (model: CfaModel) => ({
+  ...estimationPayload(model),
+  summary: summarizeCfa(model),
+});
+
+Object.assign(scenarios, {
+  cbsem_ecsi_mlr: () => cbsemPayload(estimateCbsem(mobi, cbReflectiveMm, cbEcsiSm, cbEcsiAm)),
+  cbsem_ecsi_ml: () =>
+    cbsemPayload(estimateCbsem(mobi, cbReflectiveMm, cbEcsiSm, cbEcsiAm, { estimator: "ML" })),
+  cfa_doc: () => cfaPayload(estimateCfa(mobi, cfaDocMm, cfaDocAm)),
+  cbsem_intxn_pi: () =>
+    cbsemPayload(
+      estimateCbsem(
+        mobi,
+        [
+          ...cbIntxnPartialMm,
+          interactionTerm({ iv: "Image", moderator: "Expectation", method: productIndicator }),
+        ],
+        cbIntxnSm,
+      ),
+    ),
+  cbsem_intxn_two_stage: () =>
+    cbsemPayload(
+      estimateCbsem(
+        mobi,
+        [
+          ...cbIntxnPartialMm,
+          interactionTerm({ iv: "Image", moderator: "Expectation", method: twoStage }),
+        ],
+        cbIntxnSm,
+      ),
+    ),
+  cbsem_hoc: () => cbsemPayload(estimateCbsem(mobi, cbHocMm, cbHocSm)),
+} satisfies Record<string, () => unknown>);
+
+// ---------------------------------------------------------------------------
 // Serialize / compare (exact; NaN preserved via sentinel)
 // ---------------------------------------------------------------------------
 
@@ -318,7 +462,7 @@ if (capture) {
   console.log("");
   for (const name of Object.keys(scenarios)) {
     const diffs: string[] = [];
-    diffPaths(baseline[name], current[name], name, diffs);
+    diffPaths(baseline[name], current[name], name, diffs, diffLimit);
     if (diffs.length === 0) {
       console.log(`  ✓ ${name}`);
     } else {
