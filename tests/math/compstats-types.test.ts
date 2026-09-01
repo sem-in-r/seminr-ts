@@ -101,6 +101,7 @@ describe("the @compstats/core boundary keeps its types", () => {
     const delegating = (await sourceFiles()).filter(({ source }) => IMPORTS_COMPSTATS.test(source));
     expect(delegating.map(({ path }) => path).sort()).toEqual([
       "src/math/distributions.ts",
+      "src/math/optimize.ts",
       "src/math/stats.ts",
     ]);
     const rootEntry = delegating.filter(({ source }) => /from\s*"@compstats\/core"/.test(source));
