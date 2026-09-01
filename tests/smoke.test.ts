@@ -3,6 +3,6 @@ import { version } from "../src/index.ts";
 
 describe("toolchain smoke", () => {
   it("exposes the package version", () => {
-    expect(version).toBe("0.3.0");
+    expect(version).toBe("0.4.0");
   });
 });
