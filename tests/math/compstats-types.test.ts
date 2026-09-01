@@ -46,7 +46,12 @@ const repoRoot = new URL("../..", import.meta.url);
 async function sourceFiles(): Promise<Array<{ path: string; source: string }>> {
   const glob = new Bun.Glob("src/**/*.ts");
   const out: Array<{ path: string; source: string }> = [];
-  for await (const path of glob.scan(Bun.fileURLToPath(repoRoot))) {
+  for await (const entry of glob.scan(Bun.fileURLToPath(repoRoot))) {
+    // `Bun.Glob.scan` yields the platform's own separator, so on Windows this
+    // arrives as `src\\math\\stats.ts`. Normalized here because the assertions
+    // below compare path strings literally, and a URL takes forward slashes on
+    // every platform anyway.
+    const path = entry.replaceAll("\\", "/");
     out.push({ path, source: await Bun.file(new URL(path, repoRoot)).text() });
   }
   return out;
@@ -60,8 +65,9 @@ describe("the @compstats/core boundary keeps its types", () => {
     const relative = /(?:from|import)\s*\(?\s*"(\.[^"]*)"/g;
     const offenders: string[] = [];
     let scanned = 0;
-    for await (const path of glob.scan(dist)) {
-      const source = await Bun.file(dist + path).text();
+    for await (const entry of glob.scan(dist)) {
+      const source = await Bun.file(dist + entry).text();
+      const path = entry.replaceAll("\\", "/");
       for (const match of source.matchAll(relative)) {
         scanned++;
         const specifier = match[1]!;
