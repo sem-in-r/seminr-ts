@@ -1,18 +1,27 @@
-/** Statistical primitives matching R semantics (sample SD, n−1 denominators). */
+/**
+ * Statistical primitives matching R semantics (sample SD, n−1 denominators).
+ *
+ * `mean`, `sd` and `quantile` are delegated to `@compstats/core`. The first two
+ * are bit-identical to the loops they replace — both fold from 0 in the same
+ * order — and `tests/math/stats.test.ts` asserts that with `Object.is`, not
+ * closeness. `quantile` is not, and deliberately so: see its note below.
+ *
+ * The explicit annotations are load-bearing, not decoration: `@compstats/core`
+ * 0.5.0's declarations do not resolve under NodeNext, so without them these
+ * three would be `any` in our own published types. See the note in
+ * `distributions.ts` and `tests/math/compstats-types.test.ts`.
+ */
 
-export function mean(x: readonly number[]): number {
-  let sum = 0;
-  for (const v of x) sum += v;
-  return sum / x.length;
-}
+import { mean as csMean, sd as csSd, quantile as csQuantile } from "@compstats/core";
+
+/** Arithmetic mean, as R's `mean()`. */
+export const mean: (x: readonly number[]) => number = csMean;
 
 /** Sample standard deviation (n−1 denominator), as R's `sd()`. */
-export function sd(x: readonly number[]): number {
-  const m = mean(x);
-  let ss = 0;
-  for (const v of x) ss += (v - m) * (v - m);
-  return Math.sqrt(ss / (x.length - 1));
-}
+export const sd: (x: readonly number[]) => number = csSd;
+
+/** Sample quantile by R's default type-7 rule, as R's `quantile()`. */
+export const quantile: (x: readonly number[], p: number) => number = csQuantile;
 
 export interface Standardized {
   values: number[][];
@@ -184,11 +193,16 @@ function crossColumns(
   return crossFromCentered(statsA, statsB, correlate);
 }
 
-/** Quantile using R's default type-7 interpolation. */
-export function quantile(x: readonly number[], p: number): number {
-  const sorted = [...x].sort((a, b) => a - b);
-  const h = (sorted.length - 1) * p;
-  const lo = Math.floor(h);
-  const hi = Math.ceil(h);
-  return sorted[lo]! + (h - lo) * (sorted[hi]! - sorted[lo]!);
-}
+/**
+ * `quantile` is R's default type-7 interpolation, re-exported at the top of
+ * this file from `@compstats/core`.
+ *
+ * This one is *not* a bit-identical swap, and taking it was a parity decision
+ * rather than a refactor. The implementation retired here interpolated as
+ * `low + h * (high - low)`; R's `quantile.default` writes the same quantity as
+ * `(1 - h) * low + h * high`, which is what `@compstats/core` follows. The two
+ * are equal in exact arithmetic and differ in the last bit or two in doubles,
+ * so every percentile CI in `src/bootstrap/` moves at the 1e-16 level — toward
+ * R, which is the acceptance bar. `tests/math/stats.test.ts` pins both the
+ * agreement with R and the shape of the difference.
+ */

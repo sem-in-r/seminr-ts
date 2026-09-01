@@ -12,6 +12,20 @@
  * public surface is a written list: swapping an implementation for a delegation
  * to `@compstats/core` is then invisible to importers, and widening the surface
  * by accident is impossible. `tests/math/facade.test.ts` pins the list.
+ *
+ * **What is delegated to `@compstats/core`, and what is not.** The distributions
+ * (`normalCdf`, `chisqCdf`, `noncentralChisqCdf`, `tCdf`, `lgamma`,
+ * `lowerRegGamma`, `incompleteBeta`) and the summaries (`mean`, `sd`,
+ * `quantile`) are thin delegations — those are ports of R's own `nmath` sources
+ * and of `quantile(type = 7)`, pinned to R by conformance fixtures, where the
+ * code they replaced was Lanczos, Numerical Recipes and a paraphrase of R's
+ * interpolation. Everything else here stays seminr-ts's own: the matrix
+ * vocabulary, the solvers, the eigen and Cholesky routines, and — deliberately —
+ * the BFGS optimizer, for the reasons written into `optimize.ts`.
+ *
+ * Names delegated from `@compstats/core` carry explicit type annotations at the
+ * point of definition; see `tests/math/compstats-types.test.ts` for why that is
+ * a rule rather than a style.
  */
 
 // Row-major matrix primitives and name-addressable matrix wrapper

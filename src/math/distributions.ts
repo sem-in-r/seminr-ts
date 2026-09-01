@@ -22,18 +22,36 @@
  *
  * `noncentralChisqCdf` and `chisqCdf` are R's one `pchisq` split in two, which
  * is how seminr-ts's callers read them.
+ *
+ * **Every delegation here carries an explicit type annotation, on purpose.**
+ * `@compstats/core` 0.5.0 ships `.d.ts` files whose relative re-exports have no
+ * file extension (`export { mean } from "./core/arith"`), which Node16/NodeNext
+ * module resolution rejects — TS2834. This package resolves modules as NodeNext
+ * (it publishes to npm), and `skipLibCheck: true` swallows the error, so every
+ * name imported from `@compstats/core` arrives as `any` and would silently
+ * infect our own published declarations. Annotating the boundary keeps
+ * `@seminr/core/math`'s types exact whatever upstream's packaging does;
+ * `tests/math/compstats-types.test.ts` fails if an `any` ever leaks back in.
+ * Reported upstream — see plan 010, task 4f.
  */
 
-import { pnorm, pchisq, pt, logGamma, regularizedGammaP, incompleteBeta } from "@compstats/core";
+import {
+  pnorm,
+  pchisq,
+  pt,
+  logGamma,
+  regularizedGammaP,
+  incompleteBeta as csIncompleteBeta,
+} from "@compstats/core";
 
 /** log Gamma(x) for x > 0 (R's `lgamma`). */
-export const lgamma = logGamma;
+export const lgamma: (x: number) => number = logGamma;
 
 /** Regularized lower incomplete gamma P(a, x) (R's `pgamma(x, a)`). */
-export const lowerRegGamma = regularizedGammaP;
+export const lowerRegGamma: (a: number, x: number) => number = regularizedGammaP;
 
 /** Regularized incomplete beta function I_x(a, b) (R's `pbeta(x, a, b)`). */
-export { incompleteBeta };
+export const incompleteBeta: (x: number, a: number, b: number) => number = csIncompleteBeta;
 
 /** Student-t CDF (R's `pt(x, df)`). */
 export function tCdf(x: number, df: number): number {

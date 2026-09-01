@@ -21,8 +21,8 @@ It serves two kinds of users:
   notebook that runs TypeScript) instead of R. Start at
   [Analyzing data with seminr-ts](#analyzing-data-with-seminr-ts).
 - **Developers** embedding SEM estimation in a product — a dashboard, a survey
-  platform, a browser tool. The library is zero-dependency, runtime-agnostic
-  ESM with TypeScript types. Start at
+  platform, a browser tool. The library is runtime-agnostic ESM with TypeScript
+  types and a single runtime dependency. Start at
   [Integrating seminr-ts into a product](#integrating-seminr-ts-into-a-product).
 
 ## Status
@@ -266,9 +266,17 @@ JSON-serializable; nothing is a class instance.
 
 ### Runtime support
 
-The library is zero-dependency, runtime-agnostic ES modules — no `node:*` or
-`Bun.*` APIs anywhere in `src/` (a test-guarded browser-target bundle check
-keeps it that way). It runs in Bun, Node, Deno, and web browsers.
+The library is runtime-agnostic ES modules — no `node:*` or `Bun.*` APIs
+anywhere in `src/` (a test-guarded browser-target bundle check keeps it that
+way). It runs in Bun, Node, Deno, and web browsers.
+
+There is one runtime dependency, [`@compstats/core`](https://www.npmjs.com/package/@compstats/core)
+(MIT, no transitive dependencies of its own), which supplies the distribution
+functions and the summary statistics — `pnorm`, `pchisq`, `pt`, `mean`, `sd`,
+`quantile` — as ports of R's own `nmath` sources. Delegating them replaced
+hand-written approximations with routines pinned to R by conformance fixtures,
+which is the same acceptance bar this package is held to. Graphviz rendering
+remains an optional peer dependency.
 TypeScript declarations ship in the package, `sideEffects: false` is set, so
 bundlers can tree-shake unused estimators (e.g. shipping only PLS without the
 CBSEM code).

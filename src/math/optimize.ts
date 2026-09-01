@@ -1,4 +1,31 @@
-/** Unconstrained quasi-Newton minimization (BFGS with backtracking line search). */
+/**
+ * Unconstrained quasi-Newton minimization (BFGS with backtracking line search).
+ *
+ * Deliberately **not** delegated to `@compstats/core`'s `optim`, unlike the
+ * distributions beside it. Plan 010 proposed the swap and the measurement
+ * declined it, for three reasons in this order:
+ *
+ * 1. There is no accuracy to gain. `@compstats/core` 0.5.0 took *this* routine
+ *    upstream and wraps it in R's `optim` call shape; its own documentation says
+ *    it is not R's algorithm (R runs Nash's algorithm 21 with a different line
+ *    search and a different stopping rule). Delegating would not move the code
+ *    closer to R the way `pnorm`/`pchisq`/`pt` did — it would only move where
+ *    the same algorithm is maintained.
+ * 2. It is not behavior-preserving. The two differ in the order of the inverse
+ *    Hessian update and in the stall rule's shape, and on the ECSI CBSEM fit
+ *    (53 free parameters) that moves the optimum by 2.7e-8 per parameter — a
+ *    thousand times the agreement the plan's three-parameter probe found.
+ * 3. That shift breaks a shipped fixture. The C5 higher-order model makes
+ *    `L' R^-1 L` in `src/cbsem/tenBerge.ts` exactly singular, so its smallest
+ *    eigenvalue is a rounding artefact whose *sign* is luck: +1.2e-16 here,
+ *    -1.3e-16 under `optim`, and `symMatrixPower(_, -0.5)` turns the negative
+ *    one into NaN scores. See `.claude/FUTURE.md` — the fragility is
+ *    pre-existing and shared with seminr's own `%^%`, but it means any change
+ *    that perturbs the optimum at the 1e-8 level is a fixture risk.
+ *
+ * Revisit only if `@compstats/core` ever ships R's actual Nash BFGS, which
+ * would be a reason to move rather than a way to delete code.
+ */
 
 export interface BfgsOptions {
   fn: (x: number[]) => number;
