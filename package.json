@@ -68,6 +68,6 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "@compstats/core": "^0.6.0"
+    "@compstats/core": "^0.6.1"
   }
 }
