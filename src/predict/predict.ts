@@ -6,7 +6,7 @@
  */
 
 import { namedMatrix, type NamedMatrix } from "../math/matrix.ts";
-import { mean, sd } from "../math/stats.ts";
+import { colMean, sd } from "../math/stats.ts";
 import { estimatePls, type PlsModel } from "../estimate/estimatePls.ts";
 import { rerun } from "../estimate/rerun.ts";
 import { getColumn, selectColumns, type Dataset } from "../estimate/data.ts";
@@ -49,7 +49,9 @@ function createPiItems(model: PlsModel, testData: Dataset, interaction: string):
     const sds: Record<string, number> = {};
     for (const item of items) {
       const col = getColumn(model.rawdata, item);
-      means[item] = mean(col);
+      // feature_plspredict.R:206-207 SPLITS: colMeans for the centre,
+      // stats::sd for the scale. Two R routines, two lines here.
+      means[item] = colMean(col);
       sds[item] = sd(col);
     }
     return { means, sds };

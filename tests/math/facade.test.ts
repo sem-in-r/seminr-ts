@@ -13,14 +13,23 @@ import type {
 /**
  * Contract test for the `@seminr/core/math` subpath.
  *
- * `src/math/` is public API since 0.2.0 and has a second consumer:
- * `seminrExtras-ts` imports `quantile`, `tCdf`, `solve`, `colCor`, `colCov`
- * (src/) and `jacobiEigenSym` (demos/) from it. Plan 010 replaces several of
- * these implementations with delegations to `@compstats/core`; this list is the
- * hard-coded record of what the subpath exported before that work started, so
- * any swap that drops or renames a name fails here rather than downstream.
+ * The list below was originally the record of what the subpath exported before
+ * the `@compstats/core` delegation began (captured from `src/math/index.ts` at
+ * cf73535, v0.2.1), guarding the six names `seminrExtras-ts` reached for. That
+ * job is finished: extras migrated off the subpath entirely, and **0.5.0 retired
+ * the nine names that existed only for it** — `tCdf`, `lgamma`, `lowerRegGamma`,
+ * `incompleteBeta`, `jacobiEigenSym`, `quantile`, `solve`, `colCor`, `colCov`.
+ * All nine have an R-pinned counterpart in `@compstats/core`; only `tCdf` had no
+ * internal caller and so lost its implementation as well as its export.
  *
- * Captured from `src/math/index.ts` at cf73535 (v0.2.1).
+ * `jacobiEigenSym` is the one to be careful with. It is called *inside* `math/`
+ * by `symMatrixPower` (`src/math/eigen.ts`), which `src/cbsem/tenBerge.ts` uses,
+ * and ours clamps near-zero eigenvalues where `@compstats/core`'s
+ * `eigenSymmetric` does not. Only the export went; the implementation stays.
+ *
+ * The list's job now is the one it always did second: pin the surface so an
+ * accidental `export *` cannot widen it, and so a drop is caught here rather
+ * than by whoever imports the subpath next.
  */
 const EXPORTS = [
   // matrix.ts
@@ -31,22 +40,16 @@ const EXPORTS = [
   "nmGet",
   "nmSet",
   // solve.ts
-  "solve",
   "inverse",
   "ols",
   "olsColumns",
   // eigen.ts
-  "jacobiEigenSym",
   "symMatrixPower",
   // cholesky.ts
   "cholesky",
   "logDetFromChol",
   "cholInverse",
   // distributions.ts
-  "lgamma",
-  "lowerRegGamma",
-  "incompleteBeta",
-  "tCdf",
   "normalCdf",
   "chisqCdf",
   "noncentralChisqCdf",
@@ -54,28 +57,33 @@ const EXPORTS = [
   "noncentralChisqUpperTail",
   // stats.ts
   "mean",
+  "colMean",
   "sd",
   "standardize",
   "standardizeInPlace",
   "cov",
   "cor",
-  "colCov",
-  "colCor",
   "centerColumns",
   "corFromCentered",
-  "quantile",
   // optimize.ts
   "bfgs",
 ] as const;
 
-/** The six `seminrExtras-ts` reaches for — called out so a break is legible. */
-const EXTRAS_DEPENDENCIES = [
+/**
+ * Retired in 0.5.0. Asserted **absent** rather than merely dropped from the list
+ * above, because "we removed it" and "it is gone from the built surface" are
+ * different claims and only the second one is what a consumer sees.
+ */
+const RETIRED = [
   "quantile",
   "tCdf",
   "solve",
   "colCor",
   "colCov",
   "jacobiEigenSym",
+  "lgamma",
+  "lowerRegGamma",
+  "incompleteBeta",
 ] as const;
 
 describe("@seminr/core/math facade", () => {
@@ -94,10 +102,9 @@ describe("@seminr/core/math facade", () => {
     expect(extra.sort()).toEqual([]);
   });
 
-  it("keeps the names seminrExtras-ts imports", () => {
-    for (const name of EXTRAS_DEPENDENCIES) {
-      expect(typeof (math as Record<string, unknown>)[name]).toBe("function");
-    }
+  it("no longer exports the names retired in 0.5.0", () => {
+    const surviving = RETIRED.filter((name) => name in math);
+    expect(surviving).toEqual([]);
   });
 
   it("keeps every export working through the subpath, not just importable", () => {
@@ -126,22 +133,15 @@ describe("@seminr/core/math facade", () => {
     expect(math.nmGet(named, "r1", "c1")).toBe(7);
 
     // solve / eigen / cholesky
-    expect(math.solve(a, [1, 0, 0]).length).toBe(3);
     expect(math.inverse(a).length).toBe(3);
     expect(math.ols(x, y).length).toBe(2);
     expect(math.olsColumns(math.transpose(x), y).length).toBe(2);
-    const eig: EigenSym = math.jacobiEigenSym(a);
-    expect(eig.values.length).toBe(3);
     expect(math.symMatrixPower(a, 0.5).length).toBe(3);
     expect(math.cholesky(a).length).toBe(3);
     expect(Number.isFinite(math.logDetFromChol(math.cholesky(a)))).toBe(true);
     expect(math.cholInverse(a).length).toBe(3);
 
     // distributions
-    expect(Number.isFinite(math.lgamma(4.5))).toBe(true);
-    expect(math.lowerRegGamma(2, 1)).toBeGreaterThan(0);
-    expect(math.incompleteBeta(0.5, 2, 3)).toBeGreaterThan(0);
-    expect(math.tCdf(0, 10)).toBeCloseTo(0.5, 12);
     expect(math.normalCdf(0)).toBeCloseTo(0.5, 12);
     expect(math.chisqCdf(1, 1)).toBeGreaterThan(0);
     expect(math.noncentralChisqCdf(1, 1, 0.5)).toBeGreaterThan(0);
@@ -153,6 +153,7 @@ describe("@seminr/core/math facade", () => {
 
     // stats
     expect(math.mean(y)).toBe(2.5);
+    expect(math.colMean(y)).toBe(2.5);
     expect(math.sd(y)).toBeGreaterThan(0);
     const std: Standardized = math.standardize(x);
     expect(std.values.length).toBe(4);
@@ -161,11 +162,8 @@ describe("@seminr/core/math facade", () => {
     expect(inPlace.length).toBe(4);
     expect(Number.isFinite(math.cov(y, y))).toBe(true);
     expect(math.cor(y, y)).toBeCloseTo(1, 12);
-    expect(math.colCov(x, x).length).toBe(2);
-    expect(math.colCor(x, x).length).toBe(2);
     const centered: CenteredColumns = math.centerColumns(x);
     expect(math.corFromCentered(centered, centered).length).toBe(2);
-    expect(math.quantile(y, 0.5)).toBe(2.5);
 
     // optimize
     const options: BfgsOptions = {

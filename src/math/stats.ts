@@ -24,6 +24,40 @@ export const sd: (x: readonly number[]) => number = csSd;
 /** Sample quantile by R's default type-7 rule, as R's `quantile()`. */
 export const quantile: (x: readonly number[], p: number) => number = csQuantile;
 
+/**
+ * Column mean as R's `colMeans()` — `do_colsum` (`src/main/array.c`), a single
+ * uncorrected pass. **Not** `mean` above, and the distinction is load-bearing.
+ *
+ * R has three means and this file exports two of them:
+ *
+ *   1. `mean(<double>)` — `do_mean`'s REALSXP branch (`src/main/summary.c`).
+ *      Sums, divides, then makes a second pass adding the mean of the residuals
+ *      back. The residuals are measured against the *rounded* first pass, so
+ *      their sum recovers the error it accumulated instead of cancelling. This
+ *      is the delegated `mean` above.
+ *   2. `colMeans()` — `do_colsum`. One pass. This function.
+ *   3. `mean(<integer>)` — `do_mean`'s INTSXP branch, which has no second pass.
+ *      So on integer input R's `mean` *is* `colMeans`, and **every bundled
+ *      seminr dataset is integer** (`sapply(mobi, storage.mode)`). A call site
+ *      porting `mean()` over *raw* data therefore wants this function too; only
+ *      sites over derived doubles — construct scores, bootstrap replicates,
+ *      residuals, anything post-`standardize` — want the corrected one.
+ *
+ * They differ on 8 of mobi's 24 columns, and on ~89% of random double vectors.
+ * `sd` and `var` have no such ambiguity: R coerces integer input to double and
+ * `cov.c`'s corrected `MEAN` macro runs either way.
+ *
+ * Pinned against R as exact doubles in `tests/math/arith-conformance.test.ts`.
+ * **Name the R function you are porting at every new call site** — the delegation
+ * looks right whichever one you pick, because the name matches either way, and
+ * the two differ by ulps that no feature-level fixture can see.
+ */
+export function colMean(x: readonly number[]): number {
+  let s = 0;
+  for (const v of x) s += v;
+  return s / x.length;
+}
+
 export interface Standardized {
   values: number[][];
   means: number[];
@@ -33,6 +67,13 @@ export interface Standardized {
 /**
  * Z-score each column (sample SD), keeping the column means/sds, as seminr's
  * `standardize_safely` (compute_safe.R). Throws on zero-variance columns.
+ *
+ * **Centers on {@link colMean}, not {@link mean}.** `compute_safe.R:15` is
+ * `center <- colMeans(x)`, which is R's uncorrected single pass; the scale is
+ * `sqrt(colSums(res * res) / (n - 1))`, computed here from the same centered
+ * residuals. Routing the centre through the corrected `mean` was correct only
+ * while that function was itself uncorrected, and moves the centre a full ulp
+ * off R on 8 of mobi's 24 columns once it is not.
  */
 export function standardize(values: readonly (readonly number[])[], colNames?: readonly string[]): Standardized {
   const nrow = values.length;
@@ -42,8 +83,18 @@ export function standardize(values: readonly (readonly number[])[], colNames?: r
   for (let j = 0; j < ncol; j++) {
     const col = new Array<number>(nrow);
     for (let i = 0; i < nrow; i++) col[i] = values[i]![j]!;
-    means[j] = mean(col);
-    sds[j] = sd(col);
+    // R's colMeans (do_colsum), not mean (do_mean) — see colMean's note.
+    const m = colMean(col);
+    means[j] = m;
+    // NOT sd(col): standardize_safely takes the scale from the residuals it
+    // just centered, so it inherits colMeans. sd() centers on the corrected
+    // mean instead and parts company on 5 of mobi's 24 columns.
+    let ss = 0;
+    for (let i = 0; i < nrow; i++) {
+      const d = col[i]! - m;
+      ss += d * d;
+    }
+    sds[j] = Math.sqrt(ss / Math.max(1, nrow - 1));
     if (sds[j] === 0) {
       const name = colNames?.[j] ?? `column ${j}`;
       throw new Error(`Cannot standardize: zero variance in ${name}`);
@@ -63,6 +114,11 @@ export function standardize(values: readonly (readonly number[])[], colNames?: r
  * identical to `standardize()` (same mean and SD passes, same division per
  * cell) without the column-extraction and output allocations. Throws on
  * zero-variance columns like `standardize()`.
+ *
+ * The `sum / nrow` below is {@link colMean} inlined — R's `colMeans`, matching
+ * `standardize()`. The two are asserted bit-for-bit on every mobi cell in
+ * `tests/math/arith-conformance.test.ts`; that assertion is what catches the
+ * pair silently splitting if either centre is ever changed alone.
  */
 export function standardizeInPlace(values: number[][]): void {
   const nrow = values.length;

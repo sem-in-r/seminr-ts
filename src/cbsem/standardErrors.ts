@@ -153,7 +153,27 @@ export interface SolutionRow {
   ciUpper: number | null;
 }
 
-const twoSidedP = (z: number) => 2 * (1 - normalCdf(Math.abs(z)));
+/**
+ * Two-sided normal p-value, formed **without a subtraction**.
+ *
+ * `2 * (1 - pnorm(|z|))` was the previous spelling and it loses the tail: a
+ * lower tail just below 1 carries absolute error that the subtraction then
+ * divides by a probability as small as 1e-19, and past |z| = 9 it has no digits
+ * left to give at all — `1 - pnorm(9)` is exactly 0 where the probability is
+ * 2.26e-19. `pnorm(-|z|)` computes the same quantity directly.
+ *
+ * Verified against R 4.5.3 across |z| in [0.5, 50]: `2 * pnorm(-abs(z))` is
+ * **bit-identical** to `2 * pnorm(abs(z), lower.tail = FALSE)` at every point,
+ * so the `lowerTail` option buys nothing here and the negation is the simpler
+ * spelling of the same number. `2 * (1 - pnorm(abs(z)))` matches neither, and
+ * returns 0 from |z| = 9 onward.
+ *
+ * This is the same deliberate departure from the reference that
+ * {@link chisqUpperTail} makes: lavaan itself subtracts and so reports 0 in the
+ * far tail, which is why the fixtures store 0 there. Nothing that reads a
+ * p-value as a decision at 0.05, 0.01 or 0.001 can tell the difference.
+ */
+const twoSidedP = (z: number) => 2 * normalCdf(-Math.abs(z));
 
 function tableFromEstimates(
   pt: CbsemParTable,

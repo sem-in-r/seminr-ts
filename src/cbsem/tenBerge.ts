@@ -7,7 +7,7 @@
 import { matmul, namedMatrix, transpose, type NamedMatrix } from "../math/matrix.ts";
 import { cholInverse } from "../math/cholesky.ts";
 import { symMatrixPower } from "../math/eigen.ts";
-import { mean } from "../math/stats.ts";
+import { colMean } from "../math/stats.ts";
 import type { ColumnMatrix } from "../estimate/data.ts";
 import type { CbsemParTable } from "./partable.ts";
 import type { ModelMatrices } from "./sigma.ts";
@@ -30,7 +30,9 @@ export function tenBergeScores(
   const p = pt.observed.length;
 
   // Standardize items with mean and N-denominator SD (lavaan sampstat cov diag).
-  const means = Array.from({ length: p }, (_, j) => mean(data.values.map((row) => row[j]!)));
+  // estimate_factor_scores.R:41 is `i.means <- colMeans(X)` — R's
+  // uncorrected single pass, not mean(). See colMean's note.
+  const means = Array.from({ length: p }, (_, j) => colMean(data.values.map((row) => row[j]!)));
   const sds = Array.from({ length: p }, (_, j) => {
     let ss = 0;
     for (const row of data.values) ss += (row[j]! - means[j]!) ** 2;

@@ -1,6 +1,6 @@
 {
   "name": "@seminr/core",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "SEM (Structural Equation Modeling) estimation in TypeScript — PLS-SEM and covariance-based SEM (CBSEM/CFA), ported from the seminr R package",
   "author": "Soumya Ray",
   "repository": {
@@ -68,6 +68,6 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "@compstats/core": "^0.6.1"
+    "@compstats/core": "^0.7.0"
   }
 }
