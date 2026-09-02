@@ -4,7 +4,7 @@
  * construct-score statistics, and both correlation matrices.
  */
 
-import { colCor, mean, sd } from "../math/stats.ts";
+import { colCor, colMean, mean, sd } from "../math/stats.ts";
 import { namedMatrix, type NamedMatrix } from "../math/matrix.ts";
 import { measurementModelItems } from "../model/mmMatrix.ts";
 import { getColumn, selectColumns, type Dataset } from "../estimate/data.ts";
@@ -46,12 +46,30 @@ function moments(x: readonly number[], m: number): { kurtosis: number; skewness:
   };
 }
 
-/** Per-column descriptive statistics table (rows = variables), NaN-tolerant. */
-export function desc(data: Dataset): NamedMatrix {
+/**
+ * Per-column descriptive statistics table (rows = variables), NaN-tolerant.
+ *
+ * `centre` selects which of R's means `library.R:277`'s
+ * `apply(data, 2, mean, na.rm =)` actually computes, and the choice is the
+ * caller's because in R it is decided by the *storage mode* of the argument:
+ *
+ *   - `report_descriptives.R:4` passes `rawdata[, items]`, and every bundled
+ *     seminr dataset is an **integer** frame. `mean` on an integer vector takes
+ *     `do_mean`'s INTSXP branch, which has no correcting second pass — so it is
+ *     `colMeans`, and {@link colMean} is the port.
+ *   - `report_descriptives.R:7` passes `construct_scores`, which are **doubles**,
+ *     so the same R call takes the REALSXP branch and corrects.
+ *
+ * `kurt` and `skew` (`library.R:261,272`) centre on that same `mean(x)`, so the
+ * moments follow whichever centre is chosen here. `sd` never needs the question
+ * asked: R coerces integer input to double and `cov.c`'s corrected `MEAN` macro
+ * runs either way.
+ */
+export function desc(data: Dataset, centre: (x: readonly number[]) => number = mean): NamedMatrix {
   const values = data.columns.map((name, j) => {
     const raw = data.values.map((row) => row[j]!);
     const present = raw.filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
-    const m = mean(present);
+    const m = centre(present);
     const sorted = [...present].sort((a, b) => a - b);
     const { kurtosis, skewness } = moments(present, m);
     return [
@@ -81,8 +99,8 @@ export function descriptives(model: PlsModel): PlsDescriptives {
   const scores = model.constructScores;
   return {
     statistics: {
-      items: desc(itemData),
-      constructs: desc({ columns: scores.cols, values: scores.values }),
+      items: desc(itemData, colMean), // raw items: R sees an integer frame
+      constructs: desc({ columns: scores.cols, values: scores.values }, mean), // scores are doubles
     },
     correlations: {
       items: namedMatrix(

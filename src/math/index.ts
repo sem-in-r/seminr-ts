@@ -58,6 +58,7 @@ export {
 // Statistical primitives matching R semantics (mean/sd/cov/cor/quantile, standardization)
 export {
   mean,
+  colMean,
   sd,
   standardize,
   standardizeInPlace,

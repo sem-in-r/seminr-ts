@@ -6,7 +6,7 @@
 import type { Matrix } from "../math/matrix.ts";
 import { matmul, transpose, zeros } from "../math/matrix.ts";
 import { inverse } from "../math/solve.ts";
-import { mean } from "../math/stats.ts";
+import { colMean } from "../math/stats.ts";
 import type { ColumnMatrix } from "../estimate/data.ts";
 import type { CbsemParTable } from "./partable.ts";
 
@@ -17,7 +17,9 @@ import type { CbsemParTable } from "./partable.ts";
 export function sampleCovariance(data: ColumnMatrix): Matrix {
   const n = data.values.length;
   const p = data.columns.length;
-  const means = Array.from({ length: p }, (_, j) => mean(data.values.map((row) => row[j]!)));
+  // lavaan's sample statistics centre on base::colMeans — R's
+  // uncorrected single pass, not mean(). See colMean's note.
+  const means = Array.from({ length: p }, (_, j) => colMean(data.values.map((row) => row[j]!)));
   const s = zeros(p, p);
   for (const row of data.values) {
     for (let i = 0; i < p; i++) {

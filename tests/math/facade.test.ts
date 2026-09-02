@@ -54,6 +54,7 @@ const EXPORTS = [
   "noncentralChisqUpperTail",
   // stats.ts
   "mean",
+  "colMean",
   "sd",
   "standardize",
   "standardizeInPlace",
@@ -153,6 +154,7 @@ describe("@seminr/core/math facade", () => {
 
     // stats
     expect(math.mean(y)).toBe(2.5);
+    expect(math.colMean(y)).toBe(2.5);
     expect(math.sd(y)).toBeGreaterThan(0);
     const std: Standardized = math.standardize(x);
     expect(std.values.length).toBe(4);
