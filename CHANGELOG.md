@@ -87,7 +87,26 @@ history in [seminr's NEWS](https://github.com/sem-in-r/seminr).
   are now R's corrected forms, so every site that ports R's `mean()` over a
   double vector — bootstrap replicate means and SDs, PLS-MGA group means, the
   inner weighting scheme's hoisted `cov`/`cor`, PLSpredict's error metrics —
-  moves in the last bits, **toward R**. No fixture needed re-pinning.
+  now **computes the function R computes**, where before it computed
+  `sum(x)/n`. No fixture needed re-pinning.
+
+  **That is a claim about each site's arithmetic, not about composite
+  parity, and the two are not the same claim.** A downstream port measured
+  the difference across 1574 `pathCoef` and `outerWeights` cells against R
+  goldens, before and after taking this release: 244 moved, **117 closer to R
+  and 113 farther**, exact-match cells up from 57 to 61, mean absolute
+  residual 2.223e-17 → 2.160e-17, and worst-case residual 8.882e-16 →
+  1.332e-15. Nine orders of magnitude inside their 1e-5 tolerance, so nothing
+  was at risk — but at the aggregate the change is a wash, not an
+  improvement.
+
+  This is what you should expect once a residual sits at the double-precision
+  floor. A construct score passes through many operations whose association
+  orders still differ from R's, so which way the composite lands is decided by
+  rounding elsewhere in the chain rather than by the corrected mean. Fixing an
+  operation to match R makes that operation right; it does not make an estimate
+  built from a hundred of them converge. Reported by the `seminrExtras-ts`
+  port, whose measurement this is.
 
   If you depend on both packages, this release also ends a nested install:
   while `@seminr/core` pinned `^0.6.1` and you pinned `^0.7.0`, npm and bun
