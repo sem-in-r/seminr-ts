@@ -27,7 +27,7 @@
 > algebra was re-measured with its blocker removed and declined again, and slice 3 finally has a
 > price. What remains below is what is still open.
 
-- **Retire the extras-facing `@seminr/core/math` exports** — all six have an R-pinned counterpart in `@compstats/core`, but they fall into two very different groups, and only the first can actually be deleted:
+- ~~**Retire the extras-facing `@seminr/core/math` exports**~~ — **shipped in v0.5.0** (branch `compstats-0.7`). Nine names went, not six: the table below omitted `lgamma`, `lowerRegGamma` and `incompleteBeta`, which have no `src/` caller outside `math/` either. `seminrExtras-ts` migrated off the subpath entirely, closing gate (2); gate (1) was met by v0.4.0. Only `tCdf` lost its implementation. **`jacobiEigenSym` kept its** — the row below was right and a downstream audit that scoped consumers as "outside `math/`" got it wrong, because `symMatrixPower` calls it inside `math/` and ours clamps where `eigenSymmetric` does not. The deprecation-notice-one-release-ahead rule below was **waived deliberately**: pre-1.0, `^0.4.0` resolves to `>=0.4.0 <0.5.0`, so the caret range already withholds the release from every existing consumer and the notice protects nobody who is not opting in anyway. `tests/math/facade.test.ts` now asserts the nine names are *absent*, not merely unlisted. Original analysis:
 
   | Symbol | Uses inside `seminr-ts/src` | Delegated by us? | `@compstats/core` counterpart | Extras call sites |
   | --- | --- | --- | --- | --- |
@@ -76,11 +76,17 @@
 
   *What it would cost*: **182 uses of the `NamedMatrix` type across 30 files**, 91 `namedMatrix` calls, 55 `nmGet`, and 29 `nmSet` writes across 7 files. It is also a **breaking change on two entry points**: `seminrExtras-ts` reaches `NamedMatrix`, `namedMatrix`, `nmGet` and `mulberry32` through the root `@seminr/core` barrel (8 files) as well as `@seminr/core/math`.
 
+  *What 0.7.0 added, and why it does not reopen this*: `fromRows` stopped allocating a `Float64Array` per row and went from 23.2 to 3.7 µs on a 250x5 frame, 505 to 70 µs at 2000x24. That was the boundary cost plan 010 priced into its decline — but plan 011 had **already** re-priced the decline with the boundary removed (see the paragraph above), and declined on the representation instead. The number changed under a decision that no longer rests on it. Reported by the `@compstats/core` maintainer as a changed number rather than a recommendation, and recorded here for the same reason.
+
   *What 0.6.0 already solved*: the conversion boundary. `withDim(data, {nrow, ncol, dimnames})` **adopts** a `Float64Array` without copying, and `matrixIndex(m)` gives `{row, col, offset}` resolved once — upstream's answer to the name-addressed builder we asked for, and a better one, since none of our 29 `nmSet` sites is a pure function of `(rowName, colName)` over the full grid. Neither is usable before the representation changes; both are what makes it possible.
 
   *A cheaper partial that was measured and rejected*: a drop-in `matmul` that flattens, calls compstats and unflattens is **44.1 → 44.7 µs** on the shape that dominates and 21.0 → 15.8 µs on the small one — a few per cent across the bootstrap, for a conversion boundary inside the most bit-pinned function in the package.
 
   Also deferred: replacing normal-equations OLS with compstats' QR-based `lm` in `src/specify/interactions.ts` and `src/predict/chunk.ts` (lands *closer* to R but moves numbers that currently pass at 1e-5 — a parity change, not a refactor), and swapping `src/plot/charts/predictError.ts`'s direct kernel sum for compstats' FFT-binned `kernelDensity` (different binning, and the plot fixture is byte-compared).
+
+- **The `cov`/`cor` call form was measured and needs no change.** `@compstats/core`'s README warns that R's `cov.c` takes a different path for one matrix than for two, so porting `stats::cor(x)` as `cor(x, x)` does not reproduce R — and `estimate_simplePLS.R:178` is `stats::cor(construct_scores)`, the one-matrix form, which this package writes as `colCor(x, x)` at nine sites. Measured on four mobi item blocks (R 4.5.3, 92 cells): R's own `cor(x)` and `cor(x, x)` differ on 48 of them, and **our `colCor(x, x)` matches the one-matrix form on 84 and the two-matrix form on 44**. So our symmetric branch already *is* the one-matrix routine in effect; the warning applies to consumers who delegated to upstream's two-argument `cor`, which we declined to do.
+
+  The residual 8 cells are not reachable by changing the call form: R's `cor(x)` cannot be reconstructed inside R either. `cov(x) / outer(sd, sd)` scores 22 of 25 on the IMAG block and `cov(x) / sqrt(outer(diag, diag))` scores 19 — against our own 22. Closing it would mean porting `cov.c`'s inner loop verbatim, for a ulp. Not worth reopening without a fixture that needs it.
 
 - **`src/evaluate/validity.ts`'s centered-column reuse stays ours.** Upstream shipped a documented `scale` → `crossprod` recipe for it (their §7). We already have the optimization — `centerColumns`/`corFromCentered` since plan 008 — and the recipe reaches the same place by a route that moves bits, so there is nothing to buy.
 

@@ -11,7 +11,6 @@ import {
   normalCdf,
   chisqCdf,
   noncentralChisqCdf,
-  tCdf,
   lgamma,
   lowerRegGamma,
   incompleteBeta,
@@ -186,7 +185,9 @@ const CASES: Case[] = [
   })),
   ...PT.map(([x, df, r, legacy]) => ({
     label: `pt(${x}, ${df})`,
-    current: tCdf(x, df),
+    // tCdf was retired with the facade in 0.5.0; the historical r/legacy
+    // columns are the record, and `pt` is what the retired wrapper called.
+    current: pt(x, df),
     compstats: pt(x, df),
     legacy,
     r,

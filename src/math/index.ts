@@ -33,10 +33,10 @@ export { zeros, matmul, transpose, namedMatrix, nmGet, nmSet } from "./matrix.ts
 export type { Matrix, NamedMatrix } from "./matrix.ts";
 
 // Linear solving (Gaussian elimination, OLS) and matrix inversion
-export { solve, inverse, ols, olsColumns } from "./solve.ts";
+export { inverse, ols, olsColumns } from "./solve.ts";
 
 // Symmetric eigendecomposition (cyclic Jacobi) and matrix powers
-export { jacobiEigenSym, symMatrixPower } from "./eigen.ts";
+export { symMatrixPower } from "./eigen.ts";
 export type { EigenSym } from "./eigen.ts";
 
 // Cholesky factorization and derived operations
@@ -44,10 +44,6 @@ export { cholesky, logDetFromChol, cholInverse } from "./cholesky.ts";
 
 // Distribution functions (normal, chi-square, t, gamma, beta)
 export {
-  lgamma,
-  lowerRegGamma,
-  incompleteBeta,
-  tCdf,
   normalCdf,
   chisqCdf,
   noncentralChisqCdf,
@@ -64,11 +60,8 @@ export {
   standardizeInPlace,
   cov,
   cor,
-  colCov,
-  colCor,
   centerColumns,
   corFromCentered,
-  quantile,
 } from "./stats.ts";
 export type { Standardized, CenteredColumns } from "./stats.ts";
 

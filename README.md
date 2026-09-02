@@ -275,13 +275,22 @@ way). It runs in Bun, Node, Deno, and web browsers.
 There is one runtime dependency, [`@compstats/core`](https://www.npmjs.com/package/@compstats/core)
 (MIT, no transitive dependencies of its own), reached through its DOM-free
 `@compstats/core/stats` entry. It supplies the distribution functions, the
-summary statistics and the optimizer — `pnorm`, `pchisq`, `pt`, `mean`, `sd`,
+summary statistics and the optimizer — `pnorm`, `pchisq`, `mean`, `sd`,
 `quantile`, and `optim`, which is R's own `vmmin` — as ports of R's `nmath` and
 `optim.c` sources. Delegating them replaced hand-written approximations with
 routines pinned to R by conformance fixtures, which is the same acceptance bar
 this package is held to; the CBSEM estimator's fit now lands measurably closer
 to lavaan's than the hand-rolled BFGS it replaced. Graphviz rendering remains an
 optional peer dependency.
+
+One caveat worth carrying if you use `@seminr/core/math`: **R has three means,
+and delegating the wrong one is invisible to a test suite.** `mean()` on a
+double vector makes a correcting second pass (`do_mean`, `summary.c`);
+`colMeans()` does not (`do_colsum`, `array.c`); and `mean()` on an *integer*
+vector takes the uncorrected branch too — which matters because every bundled
+seminr dataset is integer. The subpath exports both as `mean` and `colMean`, and
+each call site in `src/` names the R function it ports. `sd` and `var` need no
+such care: R coerces to double and corrects either way.
 TypeScript declarations ship in the package, `sideEffects: false` is set, so
 bundlers can tree-shake unused estimators (e.g. shipping only PLS without the
 CBSEM code).
