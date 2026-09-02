@@ -14,14 +14,24 @@
  * by accident is impossible. `tests/math/facade.test.ts` pins the list.
  *
  * **What is delegated to `@compstats/core`, and what is not.** The distributions
- * (`normalCdf`, `chisqCdf`, `noncentralChisqCdf`, `tCdf`, `lgamma`,
- * `lowerRegGamma`, `incompleteBeta`) and the summaries (`mean`, `sd`,
- * `quantile`) are thin delegations — those are ports of R's own `nmath` sources
- * and of `quantile(type = 7)`, pinned to R by conformance fixtures, where the
- * code they replaced was Lanczos, Numerical Recipes and a paraphrase of R's
- * interpolation. Everything else here stays seminr-ts's own: the matrix
- * vocabulary, the solvers, the eigen and Cholesky routines, and — deliberately —
+ * (`normalCdf`, `chisqCdf`, `noncentralChisqCdf`) and the summaries (`mean`,
+ * `sd`) are thin delegations — ports of R's own `nmath` sources, pinned to R by
+ * conformance fixtures, where the code they replaced was Lanczos and Numerical
+ * Recipes. Everything else here stays seminr-ts's own: the matrix vocabulary,
+ * the solvers, the eigen and Cholesky routines, `colMean`, and — deliberately —
  * the BFGS optimizer, for the reasons written into `optimize.ts`.
+ *
+ * **`mean` and `colMean` are both here on purpose.** They are two different R
+ * functions — `do_mean`'s corrected second pass and `do_colsum`'s single one —
+ * and which one a call site wants depends on the R line it ports *and*, for
+ * `mean`, on the storage mode of R's argument there. `stats.ts`'s `colMean`
+ * docstring is the reference; do not unify them.
+ *
+ * **Nine names were retired in 0.5.0** — `tCdf`, `lgamma`, `lowerRegGamma`,
+ * `incompleteBeta`, `jacobiEigenSym`, `quantile`, `solve`, `colCor`, `colCov`.
+ * They existed for `seminrExtras-ts`, which now takes them from
+ * `@compstats/core` directly. Only `tCdf` lost its implementation; the rest are
+ * still used internally and merely stopped being exported.
  *
  * Names delegated from `@compstats/core` carry explicit type annotations at the
  * point of definition; see `tests/math/compstats-types.test.ts` for why that is
